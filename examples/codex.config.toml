@@ -1,0 +1,3 @@
+[mcp_servers.resistance-tools]
+url = "https://app.resistance.dog/api/mcp"
+oauth_resource = "https://app.resistance.dog/api/mcp"

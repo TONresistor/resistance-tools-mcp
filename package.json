@@ -1,0 +1,45 @@
+{
+  "name": "@resistance/resistance-tools-mcp",
+  "version": "0.1.0",
+  "description": "Official Resistance Tools MCP bridge for wallet-authorized site, DNS, deployment, and storage actions.",
+  "type": "module",
+  "homepage": "https://github.com/TONresistor/resistance-tools-mcp#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/TONresistor/resistance-tools-mcp.git"
+  },
+  "bugs": {
+    "url": "https://github.com/TONresistor/resistance-tools-mcp/issues"
+  },
+  "bin": {
+    "resistance-tools-mcp": "./bin/resistance-tools-mcp.mjs"
+  },
+  "files": [
+    "SKILL.md",
+    "bin",
+    "docs",
+    "examples",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "check": "node --check bin/resistance-tools-mcp.mjs",
+    "pack:dry": "npm pack --dry-run"
+  },
+  "keywords": [
+    "mcp",
+    "ton",
+    "resistance-tools",
+    "tonsite",
+    "ton-storage",
+    "wallet"
+  ],
+  "author": "Digital Resistance",
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0"
+  }
+}
