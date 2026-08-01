@@ -1,18 +1,16 @@
 # Resistance Tools MCP
 
-Official MCP server for Resistance Tools: publish sites, manage deployments, prepare DNS actions, and work with TON Storage.
+Official MCP access to Resistance Tools for TON Sites, template media, deployments, TON DNS transaction preparation and TON Storage.
 
-Remote endpoint:
+The hosted server exposes **26 remote tools**, **5 fixed resources** and **6 templates**:
 
 ```text
 https://app.resistance.dog/api/mcp
 ```
 
-Agent skill instructions live in [SKILL.md](SKILL.md).
+## Setup
 
-## Recommended Setup
-
-Use the hosted Streamable HTTP MCP server with native OAuth. No MCP token is required.
+Use the hosted Streamable HTTP server with native OAuth.
 
 Codex:
 
@@ -20,7 +18,6 @@ Codex:
 codex mcp add resistance-tools \
   --url https://app.resistance.dog/api/mcp \
   --oauth-resource https://app.resistance.dog/api/mcp
-
 codex mcp login resistance-tools
 ```
 
@@ -31,54 +28,43 @@ claude mcp add --transport http resistance-tools https://app.resistance.dog/api/
 claude mcp login resistance-tools
 ```
 
-## Auth
+No manual MCP token is needed. The client opens the wallet authorization page and stores scoped OAuth credentials.
 
-The MCP client handles OAuth:
+## What it supports
 
-1. Discovers OAuth metadata from the MCP endpoint.
-2. Opens the Resistance Tools authorization page.
-3. The user connects a wallet and approves scopes.
-4. The client stores and refreshes scoped bearer tokens.
-5. Protected tools run with `Authorization: Bearer <token>`.
+- Publish files or the `links`, `blog`, `redirect`, `token`, `sale` and `tip` templates.
+- Publish to `name.ton`, `child.name.ton`, `username.t.me` or `child.username.t.me` when owned and authorized.
+- Upload PNG, JPEG, GIF or WebP template images up to 8 MiB with `media.upload_image`.
+- Read sites, releases, deployments, domains, records and Storage bags.
+- Prepare TON DNS transactions for wallet signature.
+- Create, pin and delete TON Storage bags.
+- Inspect and revoke MCP access with owner-scoped audit records.
 
-The remote MCP server does not expose auth bootstrap tools.
+See [the complete tool catalog](docs/tools.md), [template schemas](docs/templates.md) and [OAuth scopes](docs/auth.md).
 
-## Tools
+## Resources
 
-Sites:
+- `tonsite://wallet`
+- `tonsite://sites`
+- `tonsite://deployments`
+- `tonsite://domains`
+- `tonsite://bags`
 
-- `sites.publish_files`
-- `sites.publish_template`
-- `sites.rollback`
-- `sites.delete`
+## Template media workflow
 
-Storage:
+1. Request `media:write` and call `media.upload_image` with raw file bytes encoded as base64.
+2. Use the returned `media/<sha256>.<ext>` path in a template image field.
+3. Request `sites:write` and call `sites.publish_template`.
 
-- `storage.create_bag`
-- `storage.pin_bag`
-- `storage.delete_bag`
+## Optional stdio bridge
 
-Read tools:
-
-- `sites.list`
-- `sites.get_content`
-- `deployments.list`
-- `domains.list`
-- `domains.records`
-- `storage.list_bags`
-- `storage.bag_details`
-
-See [docs/tools.md](docs/tools.md) for inputs and required scopes.
-
-## Optional Stdio Bridge
-
-Use the npm bridge only when your MCP client does not support remote HTTP OAuth, or when an agent controls a wallet and can sign TON proofs itself.
+Use the bridge only when the client cannot perform remote HTTP OAuth, or when an agent controls a wallet and can sign TON proofs.
 
 ```bash
-npm install -g @resistance/resistance-tools-mcp
+npm install -g @resistance-tools/mcp
 ```
 
-Example config:
+The bridge adds 6 local auth tools and forwards the 26 remote tools. Tokens are stored in `~/.resistance-tools-mcp/auth.json` by default.
 
 ```json
 {
@@ -93,40 +79,18 @@ Example config:
 }
 ```
 
-Local bridge auth tools:
-
-- `auth.device_start` / `auth.device_complete`: browser wallet approval.
-- `auth.wallet_challenge` / `auth.wallet_complete`: agent-controlled wallet TON proof.
-- `auth.device_status` / `auth.device_revoke`: local token status and cleanup.
-
-Tokens are stored in `~/.resistance-tools-mcp/auth.json` by default.
-
-## Environment
-
-- `RESISTANCE_TOOLS_MCP_URL`: remote MCP endpoint.
-- `RESISTANCE_TOOLS_OAUTH_ISSUER`: OAuth issuer, defaults to the endpoint origin.
-- `RESISTANCE_TOOLS_MCP_RESOURCE`: OAuth resource, defaults to the MCP endpoint.
-- `RESISTANCE_TOOLS_MCP_CLIENT_ID`: optional OAuth client id. Defaults to dynamic public client registration.
-- `RESISTANCE_TOOLS_MCP_TOKEN_STORE`: local token store path.
-- `RESISTANCE_TOOLS_MCP_TOKEN`: explicit bearer token override.
+Local auth tools: `auth.wallet_challenge`, `auth.wallet_complete`, `auth.device_start`, `auth.device_complete`, `auth.device_status`, `auth.device_revoke`.
 
 ## Development
 
 ```bash
-npm install
+npm ci
+npm test
 npm run check
 npm run pack:dry
 ```
 
-## Troubleshooting
-
-If Codex reports `OAuth authorization required`, run:
-
-```bash
-codex mcp login resistance-tools
-```
-
-Then restart the Codex session or start a new thread.
+`npm run check:live` compares the public endpoint with [catalog/mcp.json](catalog/mcp.json).
 
 ## License
 

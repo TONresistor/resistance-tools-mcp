@@ -1,0 +1,51 @@
+{
+  "schemaVersion": 1,
+  "endpoint": "https://app.resistance.dog/api/mcp",
+  "serverVersion": "0.2.0",
+  "bridgeVersion": "0.2.0",
+  "remoteTools": [
+    { "name": "auth.status", "scope": "public" },
+    { "name": "auth.policy", "scope": "public" },
+    { "name": "wallet.me", "scope": "wallet:read" },
+    { "name": "mcp.access.list", "scope": "mcp:read" },
+    { "name": "mcp.audit.list", "scope": "mcp:read" },
+    { "name": "mcp.audit.summary", "scope": "mcp:read" },
+    { "name": "mcp.access.revoke_consent", "scope": "mcp:revoke" },
+    { "name": "sites.list", "scope": "sites:read" },
+    { "name": "sites.get_content", "scope": "sites:read" },
+    { "name": "sites.list_releases", "scope": "sites:read" },
+    { "name": "sites.publish_files", "scope": "sites:write" },
+    { "name": "sites.publish_template", "scope": "sites:write" },
+    { "name": "sites.rollback", "scope": "sites:rollback" },
+    { "name": "sites.delete", "scope": "sites:delete" },
+    { "name": "deployments.list", "scope": "deployments:read" },
+    { "name": "dns.lookup", "scope": "dns:read" },
+    { "name": "domains.list", "scope": "dns:read" },
+    { "name": "domains.records", "scope": "dns:read" },
+    { "name": "dns.prepare_record_tx", "scope": "dns:prepare_tx" },
+    { "name": "dns.prepare_site_record_tx", "scope": "dns:prepare_tx" },
+    { "name": "media.upload_image", "scope": "media:write" },
+    { "name": "storage.list_bags", "scope": "storage:read" },
+    { "name": "storage.bag_details", "scope": "storage:read" },
+    { "name": "storage.create_bag", "scope": "storage:write" },
+    { "name": "storage.pin_bag", "scope": "storage:write" },
+    { "name": "storage.delete_bag", "scope": "storage:delete" }
+  ],
+  "resources": [
+    { "uri": "tonsite://wallet", "scope": "wallet:read" },
+    { "uri": "tonsite://sites", "scope": "sites:read" },
+    { "uri": "tonsite://deployments", "scope": "deployments:read" },
+    { "uri": "tonsite://domains", "scope": "dns:read" },
+    { "uri": "tonsite://bags", "scope": "storage:read" }
+  ],
+  "templates": ["links", "blog", "redirect", "token", "sale", "tip"],
+  "siteTargets": ["name.ton", "child.name.ton", "username.t.me", "child.username.t.me"],
+  "bridgeTools": [
+    "auth.wallet_challenge",
+    "auth.wallet_complete",
+    "auth.device_start",
+    "auth.device_complete",
+    "auth.device_status",
+    "auth.device_revoke"
+  ]
+}

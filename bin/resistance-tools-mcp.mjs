@@ -37,6 +37,7 @@ const allowedScopes = new Set([
   "storage:read",
   "storage:write",
   "storage:delete",
+  "media:write",
   "mcp:read",
   "mcp:revoke",
 ]);
@@ -213,7 +214,7 @@ async function fetchWithBearer(input, init = {}) {
 
 async function createRemoteClient() {
   const client = new Client(
-    { name: "resistance-tools-mcp-stdio-bridge", version: "0.1.0" },
+    { name: "resistance-tools-mcp-stdio-bridge", version: "0.2.0" },
     { capabilities: {} },
   );
   remoteTransport = new StreamableHTTPClientTransport(new URL(remoteUrl), { fetch: fetchWithBearer });
@@ -558,7 +559,7 @@ async function handleLocalTool(name, args) {
 }
 
 const server = new Server(
-  { name: "resistance-tools-mcp-bridge", version: "0.1.0" },
+  { name: "resistance-tools-mcp-bridge", version: "0.2.0" },
   {
     capabilities: {
       tools: { listChanged: true },
