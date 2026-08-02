@@ -16,7 +16,7 @@ test("repository packages the current remote MCP for Codex and Claude Code", asy
   const mcp = await readJson(".mcp.json");
 
   assert.equal(pkg.private, true);
-  assert.equal(pkg.version, "0.2.0");
+  assert.equal(pkg.version, "0.2.1");
   assert.equal(catalog.serverVersion, pkg.version);
   assert.equal(registry.version, pkg.version);
   assert.equal(codexPlugin.version, pkg.version);
@@ -48,6 +48,8 @@ test("plugin exposes one Agent Skill with five bundled references", async () => 
   assert.match(skill, /^---\nname: resistance-tools\ndescription: [^\n]+\n---\n/);
   assert.match(metadata, /\$resistance-tools/);
   assert.match(metadata, /value: "resistance-tools"/);
+  assert.match(skill, /Do not enumerate the user's wallet, sites, domains, Bags, collections, or items/i);
+  assert.match(skill, /Never create a throwaway project as an intermediate step/i);
   for (const name of referenceNames) {
     assert.ok(skill.includes(`[references/${name}.md](references/${name}.md)`));
   }

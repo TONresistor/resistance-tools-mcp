@@ -4,7 +4,7 @@ Use the runtime schema as canonical. Load `transactions.md` for every transactio
 
 ## Workflow and state rules
 
-Use `dns.lookup` for public lifecycle state, `domains.list` for wallet-owned names, and `domains.records` for exact record/link state. After wallet confirmation, repeat the matching read and report only the visible change.
+Use `dns.lookup` for public lifecycle state, `domains.list` only for wallet-wide discovery or selection, and `domains.records` for exact record/link state. When the user supplies a domain, call the exact read directly. After wallet confirmation, repeat the matching read and report only the visible change.
 
 For Subdomains, page the list tools with the returned cursor, read the exact collection/item, and call `subdomains.control` immediately before management or recovery. Keep collection admin rights, parent rights, item ownership, and public name state separate.
 
@@ -24,7 +24,7 @@ Never infer availability from an empty owned list, call a published site DNS-lin
 - **Permission:** `dns:read`.
 - **Input:** none.
 - **Use:** List `.ton` names owned by the authenticated wallet and their actionable lifecycle state.
-- **Method:** Call before selecting a domain for records, renewal, site linking, or Storage linking.
+- **Method:** Call only when the user asks to list/select owned domains or a bulk action has no exact names. Do not call it merely to revalidate a supplied domain; transaction tools perform live ownership preflight.
 - **Verify:** Treat ownership as wallet-scoped and current to the indexed result. A transaction tool still performs live preflight before mutation.
 - **Report:** Give the count and relevant names, including renewal/expiry facts when useful; summarize long lists.
 

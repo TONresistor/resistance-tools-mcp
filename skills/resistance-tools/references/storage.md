@@ -37,7 +37,7 @@ Files: <count>, <size>
 - **Permission:** `storage:read`.
 - **Input:** none.
 - **Use:** List Bags owned or imported by the authenticated wallet.
-- **Method:** Call for Bag selection and after create, import, or delete.
+- **Method:** Call only for Bag discovery or selection. Do not enumerate every Bag when an exact BagID is supplied or returned by a mutation.
 - **Verify:** Use `storage.bag_details` for current detail. Presence in the list does not prove a paid provider actively stores the Bag.
 - **Report:** Give Bag name/id and relevant platform/provider state; summarize long lists.
 
@@ -101,7 +101,7 @@ Files: <count>, <size>
 - **Input:** optional `name`; non-empty `files[]`, each with `name` or `path` and exactly one of `text` or raw `contentBase64`.
 - **Use:** Create and seed a new Bag from explicit files.
 - **Method:** Preserve intended paths and content encoding; do not invent additional files.
-- **Verify:** Re-read `storage.list_bags` and `storage.bag_details`; require the returned BagID and expected file metadata.
+- **Verify:** Read `storage.bag_details` for the returned BagID and require the expected file metadata.
 - **Report:** Say created/seeded, give full BagID and size/file count, and state that paid-provider storage is separate.
 
 ### `storage.pin_bag`
@@ -110,7 +110,7 @@ Files: <count>, <size>
 - **Input:** exact public `bagId` and optional display `name`.
 - **Use:** Import and locally pin an existing public Bag.
 - **Method:** Use the exact BagID; do not describe this action as hiring a paid provider.
-- **Verify:** Re-read `storage.list_bags` and `storage.bag_details` for the imported Bag.
+- **Verify:** Read `storage.bag_details` for the exact imported BagID.
 - **Report:** Say imported/pinned by the platform, give full BagID, and keep paid-provider state separate.
 
 ### `storage.delete_bag`
@@ -119,5 +119,5 @@ Files: <count>, <size>
 - **Input:** `bagId` and identical `confirmBagId`.
 - **Use:** Delete an owned Bag reference and removable platform-seeded bytes after explicit user intent.
 - **Method:** Read details, resolve paid-provider stop/withdraw implications first, explain unchanged external state, then send matching ids.
-- **Verify:** Re-read `storage.list_bags` and require the Bag to be absent. Do not infer that provider contracts or DNS records were removed.
+- **Verify:** Re-read `storage.bag_details` for the exact BagID and require `not_found`. Do not infer that provider contracts or DNS records were removed.
 - **Report:** State which platform data was deleted and explicitly identify unchanged provider-contract and DNS state.

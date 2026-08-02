@@ -4,7 +4,7 @@ Use the live runtime schema when it differs from this bundled reference. Never e
 
 ## Workflow and response rules
 
-Call `auth.status` to distinguish a configured MCP from an authenticated session. Use `wallet.me` before owner-sensitive work, treating `ownerWallet` as the data boundary and `actorWallet` only as the delegated caller. Use access tools for current consent/session state and audit tools for execution evidence.
+Call `auth.status` only to troubleshoot authentication. Use `wallet.me` only when the user asks about identity/delegation or owner versus actor is genuinely ambiguous; normal protected tools already enforce the wallet boundary. Use access or audit tools only for an explicit access-management or audit task.
 
 On `insufficient_scope`, let the user reopen the client's native approval flow and select permissions; do not choose them. If Codex login is required, give only `codex mcp login resistance-tools`.
 

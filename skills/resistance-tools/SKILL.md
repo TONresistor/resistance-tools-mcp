@@ -21,11 +21,11 @@ If the MCP is already registered, do not add it again. Use only the client's nat
 ## Method
 
 1. Load only the bundled reference needed for the task before calling its tools.
-2. Identify the exact owner context and target. Use `wallet.me` when identity, delegation, or target access is ambiguous.
-3. Read the narrow current state before a mutation.
-4. Call the exact tool with the runtime schema. Never invent retired tools or fields.
-5. After a mutation or wallet confirmation, run the reference's named read-back tool.
-6. Report only what the tool result and read-back prove.
+2. Use an exact target supplied by the user directly. Do not enumerate the user's wallet, sites, domains, Bags, collections, or items merely to rediscover it.
+3. Read the narrow current state before a mutation. Call a list tool only for discovery, selection, bulk work, or when no exact-target read exists.
+4. Use `auth.status` only for authentication troubleshooting and `wallet.me` only when identity or delegation is requested or genuinely ambiguous.
+5. Match local work to the request: preserve or edit local files when the user wants a project or reusable source; send one-off generated content directly when it exists only to be published. Never create a throwaway project as an intermediate step.
+6. Call the exact tool with the runtime schema, run the narrow named read-back after mutation or wallet confirmation, and report only what those results prove.
 
 ## References
 
@@ -41,7 +41,7 @@ Load multiple references only for a real cross-product sequence, such as publish
 
 Every transaction tool creates a short-lived HTTPS confirmation request. Give its exact `confirmationUrl` to the user and wait. The link means `prepared` or `awaiting confirmation`; it does not mean signed, sent, submitted, confirmed, paid, linked, minted, renewed, or active.
 
-The returned `operationId` identifies the MCP confirmation request, not a product-specific operation. After the user confirms, run the mapped read-back. Treat an expired link as unusable and create a fresh request after a new preflight. Do not add boilerplate explaining that the agent cannot sign.
+The returned `operationId` identifies the internal MCP confirmation request, not a product-specific operation. Do not report it or pass it to another tool. After the user confirms, run the mapped read-back. Treat an expired link as unusable and create a fresh request after a new preflight. Do not add boilerplate explaining that the agent cannot sign.
 
 ## User response
 

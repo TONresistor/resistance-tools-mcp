@@ -3,7 +3,7 @@
   "name": "io.github.TONresistor/resistance-tools-mcp",
   "title": "Resistance Tools",
   "description": "MCP tools for TON Sites, TON DNS and TON Storage.",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "repository": {
     "url": "https://github.com/TONresistor/resistance-tools-mcp",
     "source": "github"

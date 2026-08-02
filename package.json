@@ -1,6 +1,6 @@
 {
   "name": "resistance-tools-mcp-repository",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "private": true,
   "description": "One cross-client Agent Skill, plugin metadata, and contract checks for the Resistance Tools remote MCP server.",
   "type": "module",

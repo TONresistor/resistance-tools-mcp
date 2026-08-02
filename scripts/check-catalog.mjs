@@ -245,6 +245,10 @@ for (const state of ["prepared", "awaiting confirmation", "submitted", "confirme
   assert.ok(publicGuidance.includes(state), `guidance missing state ${state}`);
 }
 assert.match(skill, /operationId.*MCP confirmation request/i);
+assert.match(skill, /Do not enumerate the user's wallet, sites, domains, Bags, collections, or items/i);
+assert.match(skill, /Never create a throwaway project as an intermediate step/i);
+assert.doesNotMatch(references.get("sites"), /Read `sites\.list` before a mutation/i);
+assert.doesNotMatch(references.get("wallet"), /Use `wallet\.me` before owner-sensitive work/i);
 assert.match(references.get("storage"), /Never pass the transaction request's `operationId`/i);
 assert.match(skill, /Do not add boilerplate explaining that the agent cannot sign/i);
 assert.match(skill, /Let the user select permissions/i);

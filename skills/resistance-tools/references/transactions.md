@@ -28,8 +28,8 @@ Expires: <expiresAt>
 - **Permission:** `transactions:request`.
 - **Input:** exact published `site`.
 - **Use:** Link an already published site to its owned TON DNS target.
-- **Method:** Confirm the site exists with `sites.list`; inspect current link/record state with `sites.list` or `domains.records`; then prepare the request.
-- **Verify:** After user confirmation, call `domains.records` or `sites.list` and require the expected record plus `linkedHere: true` or `live`.
+- **Method:** If publication was not just verified, confirm the exact site with `sites.list_releases`; inspect its exact link state with `domains.records`; then prepare the request. Never enumerate all sites for a named target.
+- **Verify:** After user confirmation, call `domains.records` for the exact target and require the expected record plus `linkedHere: true`.
 - **Report:** Before confirmation show site, backend amount when returned, expiry, and exact link. After read-back include the verified gateway/TON Site link.
 
 ### `payments.send_tx`
@@ -64,8 +64,8 @@ Expires: <expiresAt>
 - **Permission:** `transactions:request`.
 - **Input:** `domains[]` containing one to four unique owned names.
 - **Use:** Renew up to four owned `.ton` names in one wallet confirmation.
-- **Method:** Select renewable names from `domains.list`, reject duplicates, preserve exact names, and prepare the request.
-- **Verify:** After confirmation, re-read with `domains.list` or `dns.lookup` and compare expiry for every requested name.
+- **Method:** When names are supplied, reject duplicates, preserve them exactly, and let the transaction preflight validate them. Use `domains.list` only when the user asks the agent to select renewable names.
+- **Verify:** After confirmation, call `dns.lookup` for each exact requested name and compare expiry. Use `domains.list` only for an explicitly requested wallet-wide renewal view.
 - **Report:** Before confirmation list names, backend amount, expiry, and link. Afterward report only names whose renewed expiry is visible.
 
 ### `subdomains.create_collection_tx`
