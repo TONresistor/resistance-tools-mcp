@@ -1,0 +1,15 @@
+interface:
+  display_name: "Resistance Tools MCP"
+  short_description: "Operate all Resistance Tools MCP workflows"
+  default_prompt: "Use $resistance-tools-mcp to complete this Resistance Tools task and report the verified result clearly."
+
+dependencies:
+  tools:
+    - type: "mcp"
+      value: "resistance-tools"
+      description: "Hosted Resistance Tools MCP for TON Sites, DNS, Subdomains, and Storage"
+      transport: "streamable_http"
+      url: "https://app.resistance.dog/api/mcp"
+
+policy:
+  allow_implicit_invocation: true
