@@ -1,6 +1,34 @@
-# Site, release, media, and deployment tools
+# Sites, releases, media, deployments, and templates
 
 Use the runtime schema as canonical. Supported targets are `name.ton`, `child.name.ton`, `username.t.me`, and `child.username.t.me`.
+
+## Contents
+
+- Workflow and state rules
+- Tool methods
+- Template schemas
+
+## Workflow and state rules
+
+1. Read `sites.list` before a mutation and `sites.get_content` before editing a template.
+2. Use `sites.publish_files` for an explicit file tree or `sites.publish_template` for structured content. Upload template images first.
+3. After publish or rollback, call both `sites.list` and `sites.list_releases` and require the intended release to be active.
+4. If publication returns `payment_required`, load `transactions.md`, prepare `payments.send_tx`, wait for confirmation, then retry the original publication tool.
+5. To link DNS, load `transactions.md` for `sites.send_link_tx`, then verify with `domains.records` or `sites.list`.
+
+Treat publication and DNS linking as separate events. Say `live` only when `sites.list` or `domains.records` proves `live` or `linkedHere: true`. Root targets have a versioned gateway; child targets use `tonsite://<full-name>` and must not receive an invented HTTPS gateway.
+
+After verified publication, return domain, labeled versioned gateway when supported, `tonsite://` link, release number/id, and verified link status. For deletion, state that the deployment was deleted and TON DNS was unchanged.
+
+```text
+Site published
+
+Domain: <site>
+Gateway: <labeled versioned gateway, when supported>
+TON Site: tonsite://<site>
+Release: #<number> (<releaseId>)
+Status: live | published, DNS not linked here
+```
 
 ### `sites.list`
 
@@ -82,3 +110,50 @@ Use the runtime schema as canonical. Supported targets are `name.ton`, `child.na
 - **Method:** Call for chronology or provenance and select the site/action relevant to the question.
 - **Verify:** Use `sites.list` for current state; history alone does not prove what is live.
 - **Report:** Give the latest relevant event, release, timestamp, and outcome without dumping the full history.
+
+## Template schemas
+
+Use only these fields with `sites.publish_template`. Unknown fields are discarded by the canonical validator. Template content is structured data, never raw HTML.
+
+Image fields use the `media/<hash>.<ext>` path returned by `media.upload_image`. Uploads accept PNG, JPEG, GIF, and WebP up to 8 MiB.
+
+### Template `links`
+
+Required: `name`, `links` as `[{"title":"...","url":"..."}]`.
+
+Optional: `bio`, `profileLayout` (`2` or `3`), `avatar`, `accent`, `telegram`, `recipient`, `profileActions`, `visibleSections`, `blocks`, `aboutBlocks`, `theme`.
+
+### Template `blog`
+
+Required: `title`, `date` in `YYYY-MM-DD`, and `blocks`.
+
+Optional: `theme`. Blocks support paragraph/header/quote (`p`, `h`, `quote` with `s` text runs), image (`img` with media `src`), YouTube (`yt`), and separator (`hr`).
+
+### Template `redirect`
+
+Required: HTTPS `destination`.
+
+### Template `token`
+
+Required: `name`, `ticker`, checksum-valid mainnet `address`, media `logo`, and `links`.
+
+Optional: `description`, media `banner`, `website`, `channel`, `group`, `theme`.
+
+### Template `sale`
+
+Required: `price`, `currency` (`GRAM` or `USD`), `description`, `telegram`, `textColor`, `backgroundColor`, `highlightColor`.
+
+Optional: media `image`, `cardColor` (defaults to `highlightColor`), `cardOpacity` as integer 0–100 (defaults to 10).
+
+### Template `tip`
+
+Required: `name`, `description`, checksum-valid mainnet `recipient`, and `assets`.
+
+Optional: `language` (default `en`), exactly three `amounts` (default `5`, `10`, `25`), media `avatar`, and `theme`. Languages: `en`, `ru`, `zh`, `de`, `it`, `es`, `hi`. Asset kinds: `gram`, `usdt`, or `jetton` with `master`, `name`, `symbol`, and `decimals`.
+
+### Shared template validation
+
+- Colors are six-digit hex values.
+- When `theme` is present, require `textColor`, `backgroundColor`, `surfaceColor`, and `accentColor`.
+- Safe link schemes are HTTP, HTTPS, Telegram, TON, and mailto.
+- Preserve unrelated existing fields when editing a template.

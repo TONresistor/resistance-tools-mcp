@@ -1,6 +1,14 @@
-# Domain and Subdomain read tools
+# Domains and Subdomains
 
-Use the runtime schema as canonical. All transaction-producing mutations belong to the `transactions` skill.
+Use the runtime schema as canonical. Load `transactions.md` for every transaction-producing mutation.
+
+## Workflow and state rules
+
+Use `dns.lookup` for public lifecycle state, `domains.list` for wallet-owned names, and `domains.records` for exact record/link state. After wallet confirmation, repeat the matching read and report only the visible change.
+
+For Subdomains, page the list tools with the returned cursor, read the exact collection/item, and call `subdomains.control` immediately before management or recovery. Keep collection admin rights, parent rights, item ownership, and public name state separate.
+
+Never infer availability from an empty owned list, call a published site DNS-linked without the record proof, or claim ownership from a confirmation link. Return the exact name, current/verified state, expiry when relevant, and useful address or TON Site link.
 
 ### `dns.lookup`
 

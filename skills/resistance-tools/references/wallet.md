@@ -1,6 +1,14 @@
-# Wallet, access, and audit tools
+# Wallet, access, and audit
 
 Use the live runtime schema when it differs from this bundled reference. Never expose secrets, token material, or unredacted internal payloads.
+
+## Workflow and response rules
+
+Call `auth.status` to distinguish a configured MCP from an authenticated session. Use `wallet.me` before owner-sensitive work, treating `ownerWallet` as the data boundary and `actorWallet` only as the delegated caller. Use access tools for current consent/session state and audit tools for execution evidence.
+
+On `insufficient_scope`, let the user reopen the client's native approval flow and select permissions; do not choose them. If Codex login is required, give only `codex mcp login resistance-tools`.
+
+Revoke only after explicit intent: list access, resolve the exact consent/client, send matching confirmation ids, then list access again. Report authentication, relevant identity/access state, or audit result briefly without tokens or full addresses by default.
 
 ### `auth.status`
 

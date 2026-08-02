@@ -5,8 +5,7 @@ import { expectedToolContracts } from "../scripts/catalog-contract.mjs";
 
 const read = (path) => readFile(new URL(`../${path}`, import.meta.url), "utf8");
 const readJson = async (path) => JSON.parse(await read(path));
-
-const skillNames = ["domains", "sites", "storage", "transactions", "wallet"];
+const referenceNames = ["domains", "sites", "storage", "transactions", "wallet"];
 
 test("repository packages the current remote MCP for Codex and Claude Code", async () => {
   const pkg = await readJson("package.json");
@@ -35,37 +34,35 @@ test("repository packages the current remote MCP for Codex and Claude Code", asy
   assert.equal(claudePlugin.name, "resistance-tools");
   assert.deepEqual(catalog.remoteTools, expectedToolContracts);
   assert.equal(catalog.remoteTools.length, 46);
-  assert.equal(catalog.resources.length, 5);
-  assert.equal(catalog.templates.length, 6);
 });
 
-test("plugin exposes exactly the five focused Agent Skills", async () => {
+test("plugin exposes one Agent Skill with five bundled references", async () => {
   const directories = (await readdir(new URL("../skills/", import.meta.url), { withFileTypes: true }))
     .filter((entry) => entry.isDirectory())
     .map((entry) => entry.name)
     .sort();
-  assert.deepEqual(directories, skillNames);
+  assert.deepEqual(directories, ["resistance-tools"]);
 
-  for (const name of skillNames) {
-    const skill = await read(`skills/${name}/SKILL.md`);
-    const metadata = await read(`skills/${name}/agents/openai.yaml`);
-    assert.match(skill, new RegExp(`^---\\nname: ${name}\\ndescription: [^\\n]+\\n---\\n`));
-    assert.ok(skill.includes("[references/tools.md](references/tools.md)"));
-    assert.match(metadata, new RegExp(`\\$${name}`));
-    assert.match(metadata, /value: "resistance-tools"/);
+  const skill = await read("skills/resistance-tools/SKILL.md");
+  const metadata = await read("skills/resistance-tools/agents/openai.yaml");
+  assert.match(skill, /^---\nname: resistance-tools\ndescription: [^\n]+\n---\n/);
+  assert.match(metadata, /\$resistance-tools/);
+  assert.match(metadata, /value: "resistance-tools"/);
+  for (const name of referenceNames) {
+    assert.ok(skill.includes(`[references/${name}.md](references/${name}.md)`));
   }
 });
 
-test("every remote tool has one complete skill method", async () => {
+test("the five references cover every remote tool exactly once", async () => {
   const methods = [];
-  for (const name of skillNames) {
-    const doc = await read(`skills/${name}/references/tools.md`);
+  for (const name of referenceNames) {
+    const doc = await read(`skills/resistance-tools/references/${name}.md`);
     const headings = [...doc.matchAll(/^### `([^`]+)`$/gm)];
     for (let index = 0; index < headings.length; index += 1) {
       const section = doc.slice(headings[index].index, headings[index + 1]?.index ?? doc.length);
       methods.push(headings[index][1]);
       for (const marker of ["**Permission:**", "**Input:**", "**Use:**", "**Method:**", "**Verify:**", "**Report:**"]) {
-        assert.ok(section.includes(marker), `${name} ${headings[index][1]} missing ${marker}`);
+        assert.ok(section.includes(marker), `${name}.md ${headings[index][1]} missing ${marker}`);
       }
     }
   }

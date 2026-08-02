@@ -1,7 +1,7 @@
 interface:
-  display_name: "Sites"
-  short_description: "Publish and manage Resistance Tools sites"
-  default_prompt: "Use $sites to publish or manage a site with Resistance Tools."
+  display_name: "Resistance Tools"
+  short_description: "Operate all Resistance Tools MCP workflows"
+  default_prompt: "Use $resistance-tools to complete this Resistance Tools task and report the verified result."
 
 dependencies:
   tools:

@@ -1,6 +1,36 @@
-# TON Storage tools
+# TON Storage
 
-Use the runtime schema as canonical. All wallet-confirmed Storage mutations belong to the `transactions` skill.
+Use the runtime schema as canonical. Load `transactions.md` for every wallet-confirmed Storage mutation.
+
+## Contents
+
+- Paid-provider workflow
+- State and response rules
+- Tool methods
+
+## Paid-provider workflow
+
+1. Read `storage.bag_details` and select exact compatible keys from `storage.providers`.
+2. Freeze providers and shared contract balance with `storage.provider_funding_session`.
+3. Calculate exact integer funding with `storage.provider_funding_preview`.
+4. Show amount, coverage, providers, and warnings; continue only after user acceptance.
+5. Create `storage.provider_quote` with the exact accepted inputs.
+6. Load `transactions.md` and request `storage.send_provider_tx` using the live quote.
+7. After confirmation, re-read `storage.bag_details`; use `storage.provider_operation` only with a separately obtained provider-operation UUID.
+
+## State and response rules
+
+Keep platform Bag state, DNS state, provider contract/payment state, and active provider storage separate. Never recompute backend nanoTON/coverage values with floating point. Sessions last five minutes and quotes two minutes; restart the flow when stale.
+
+For a Bag result, include name when present, full BagID, file count/size, and verified seed/provider state. For a quote, include exact amount, coverage, providers, warnings, and expiry. State that paid-provider storage is separate after create/import.
+
+```text
+TON Storage Bag ready
+
+BagID: <bagId>
+Status: <verified seed or provider state>
+Files: <count>, <size>
+```
 
 ### `storage.list_bags`
 

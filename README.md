@@ -1,18 +1,12 @@
 # Resistance Tools
 
-Cross-client Agent Skills plus the remote Resistance Tools MCP for TON Sites, TON DNS, Subdomains, TON Storage, wallet access, and manually confirmed transactions.
+One cross-client Agent Skill plus the remote Resistance Tools MCP for TON Sites, TON DNS, Subdomains, TON Storage, wallet access, and manually confirmed transactions.
 
-## Skills
+## Agent Skill
 
-The plugin contains five focused skills:
+The plugin contains one `resistance-tools` skill. Its `SKILL.md` defines the shared workflow and loads only the relevant bundled reference for `sites`, `domains`, `storage`, `wallet`, or `transactions`.
 
-- `sites` — publish, inspect, roll back, and delete sites;
-- `domains` — inspect TON DNS and Subdomain state;
-- `storage` — manage Bags and paid providers;
-- `wallet` — handle authentication, identity, access, and audit;
-- `transactions` — prepare confirmation links and verify the result after wallet confirmation.
-
-Each skill contains the required workflow, result contract, and bundled technical reference for its tools. The live MCP schema remains canonical.
+Together, those references contain the permission, inputs, method, verification, and required user response for every MCP tool. The live MCP schema remains canonical.
 
 ## Plugin packages
 

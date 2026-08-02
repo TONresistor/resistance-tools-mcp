@@ -1,6 +1,27 @@
-# Wallet-confirmed transaction tools
+# Wallet-confirmed transactions
 
 Every tool in this file requires `transactions:request` and returns a short-lived HTTPS confirmation page. Use the runtime schema as canonical. A successful tool call proves preparation only; the named read-back proves the product or indexed result.
+
+## Contents
+
+- Required sequence and response
+- Tool methods
+
+## Required sequence and response
+
+Read the fresh state named by the tool, resolve all user-controlled choices, then prepare the request. Require `status: requires_user_confirmation`, an HTTPS `confirmationUrl`, `expiresAt`, and the backend summary/amount when returned. Give the exact link and wait for the user before read-back.
+
+Before confirmation, return a short `Transaction ready` message with action, target, backend amount when present, labeled exact confirmation link, and expiry. After confirmation, replace it with the verified product state and its useful link or identifier. Never reuse the MCP request `operationId` as a product operation id.
+
+```text
+Transaction ready
+
+Action: <plain-language action>
+Target: <domain, site, Bag, collection, or item>
+Amount: <backend amount, when returned>
+Confirm: [Review and confirm](<exact confirmationUrl>)
+Expires: <expiresAt>
+```
 
 ### `sites.send_link_tx`
 
