@@ -2,6 +2,12 @@
 
 One cross-client Agent Skill plus the remote Resistance Tools MCP for TON Sites, TON DNS, Subdomains, TON Storage, wallet access, and manually confirmed transactions.
 
+## Names
+
+- Marketplace/source: `resistance-tools`
+- Plugin and MCP server: `resistance-tools-mcp`
+- Agent Skill: `resistance-tools-skill`
+
 ## Agent Skill
 
 The plugin contains one `resistance-tools-skill` skill, invoked as `$resistance-tools-skill`. Its `SKILL.md` defines the shared workflow and loads only the relevant bundled reference for `sites`, `domains`, `storage`, `wallet`, or `transactions`.
@@ -24,7 +30,7 @@ The plugin installs the Agent Skill and registers the MCP server together.
 ### Codex
 
 ```bash
-codex plugin marketplace add TONresistor/resistance-tools-mcp --ref main
+codex plugin marketplace add TONresistor/resistance-tools-mcp@main
 codex plugin add resistance-tools-mcp@resistance-tools
 codex mcp login resistance-tools-mcp
 ```
@@ -34,17 +40,26 @@ codex mcp login resistance-tools-mcp
 ```bash
 claude plugin marketplace add TONresistor/resistance-tools-mcp@main
 claude plugin install resistance-tools-mcp@resistance-tools
+claude mcp login resistance-tools-mcp
 ```
 
-Run `/mcp`, select `resistance-tools-mcp`, and authenticate. The user selects permissions on the wallet approval page.
+The user selects permissions on the wallet approval page.
 
-### Upgrade from 0.2.1
+### Replace 0.2.2 or earlier, or repair `invalid_target`
+
+Use this migration if an earlier Resistance Tools version was installed, if the marketplace already exists from another source, or if an MCP startup error still names `resistance-tools`. It resets both old and partially installed current entries before installing the current names. If an entry is already absent, continue with the remaining commands.
 
 Codex:
 
 ```bash
+codex mcp logout resistance-tools
+codex mcp remove resistance-tools
+codex mcp logout resistance-tools-mcp
+codex mcp remove resistance-tools-mcp
 codex plugin remove resistance-tools@resistance-tools
-codex plugin marketplace upgrade resistance-tools
+codex plugin remove resistance-tools-mcp@resistance-tools
+codex plugin marketplace remove resistance-tools
+codex plugin marketplace add TONresistor/resistance-tools-mcp@main
 codex plugin add resistance-tools-mcp@resistance-tools
 codex mcp login resistance-tools-mcp
 ```
@@ -52,9 +67,34 @@ codex mcp login resistance-tools-mcp
 Claude Code:
 
 ```bash
+claude mcp logout resistance-tools
+claude mcp remove resistance-tools
+claude mcp logout resistance-tools-mcp
+claude mcp remove resistance-tools-mcp
 claude plugin uninstall resistance-tools@resistance-tools
-claude plugin marketplace update resistance-tools
+claude plugin uninstall resistance-tools-mcp@resistance-tools
+claude plugin marketplace remove resistance-tools
+claude plugin marketplace add TONresistor/resistance-tools-mcp@main
 claude plugin install resistance-tools-mcp@resistance-tools
+claude mcp login resistance-tools-mcp
+```
+
+### Update 0.2.3 or later
+
+Codex:
+
+```bash
+codex plugin marketplace upgrade resistance-tools
+codex plugin remove resistance-tools-mcp@resistance-tools
+codex plugin add resistance-tools-mcp@resistance-tools
+codex mcp login resistance-tools-mcp
+```
+
+Claude Code:
+
+```bash
+claude plugin marketplace update resistance-tools
+claude plugin update resistance-tools-mcp@resistance-tools
 ```
 
 ## MCP-only connection
@@ -72,9 +112,10 @@ codex mcp login resistance-tools-mcp
 
 ```bash
 claude mcp add --transport http resistance-tools-mcp https://app.resistance.dog/api/mcp
+claude mcp login resistance-tools-mcp
 ```
 
-Run `/mcp`, select `resistance-tools-mcp`, and authenticate. The user selects permissions on the wallet approval page.
+The user selects permissions on the wallet approval page.
 
 ## Other clients
 

@@ -9,14 +9,95 @@ Use the hosted `resistance-tools-mcp` MCP and treat its runtime tool schema and 
 
 ## Connection and permissions
 
-For Codex MCP-only setup:
+Keep these identifiers distinct:
+
+- Marketplace/source: `resistance-tools`
+- Plugin and MCP server: `resistance-tools-mcp`
+- Skill: `resistance-tools-skill`
+
+For a fresh Codex plugin install:
+
+```bash
+codex plugin marketplace add TONresistor/resistance-tools-mcp@main
+codex plugin add resistance-tools-mcp@resistance-tools
+codex mcp login resistance-tools-mcp
+```
+
+For a fresh Claude Code plugin install:
+
+```bash
+claude plugin marketplace add TONresistor/resistance-tools-mcp@main
+claude plugin install resistance-tools-mcp@resistance-tools
+claude mcp login resistance-tools-mcp
+```
+
+For MCP-only setup:
+
+Codex:
 
 ```bash
 codex mcp add resistance-tools-mcp --url https://app.resistance.dog/api/mcp
 codex mcp login resistance-tools-mcp
 ```
 
+Claude Code:
+
+```bash
+claude mcp add --transport http resistance-tools-mcp https://app.resistance.dog/api/mcp
+claude mcp login resistance-tools-mcp
+```
+
 If the MCP is already registered, do not add it again. Use only the client's native login flow. Let the user select permissions or use `Approve all` on the approval page; never choose permissions for them. Never request a seed phrase, private key, proof, signature, bearer token, or wallet export.
+
+For a normal update from version 0.2.3 or later, preserve the current marketplace identity and use the matching sequence.
+
+Codex:
+
+```bash
+codex plugin marketplace upgrade resistance-tools
+codex plugin remove resistance-tools-mcp@resistance-tools
+codex plugin add resistance-tools-mcp@resistance-tools
+codex mcp login resistance-tools-mcp
+```
+
+Claude Code:
+
+```bash
+claude plugin marketplace update resistance-tools
+claude plugin update resistance-tools-mcp@resistance-tools
+```
+
+An error that names `resistance-tools`, including `invalid_target`, proves the retired MCP alias is still configured. Do not retry login against that alias. Give the matching cleanup and reinstall sequence; if an old entry is already absent, continue.
+
+Codex:
+
+```bash
+codex mcp logout resistance-tools
+codex mcp remove resistance-tools
+codex mcp logout resistance-tools-mcp
+codex mcp remove resistance-tools-mcp
+codex plugin remove resistance-tools@resistance-tools
+codex plugin remove resistance-tools-mcp@resistance-tools
+codex plugin marketplace remove resistance-tools
+codex plugin marketplace add TONresistor/resistance-tools-mcp@main
+codex plugin add resistance-tools-mcp@resistance-tools
+codex mcp login resistance-tools-mcp
+```
+
+Claude Code:
+
+```bash
+claude mcp logout resistance-tools
+claude mcp remove resistance-tools
+claude mcp logout resistance-tools-mcp
+claude mcp remove resistance-tools-mcp
+claude plugin uninstall resistance-tools@resistance-tools
+claude plugin uninstall resistance-tools-mcp@resistance-tools
+claude plugin marketplace remove resistance-tools
+claude plugin marketplace add TONresistor/resistance-tools-mcp@main
+claude plugin install resistance-tools-mcp@resistance-tools
+claude mcp login resistance-tools-mcp
+```
 
 ## Method
 

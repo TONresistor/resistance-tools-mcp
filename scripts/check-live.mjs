@@ -171,6 +171,10 @@ async function checkSdkContract() {
   const client = new Client({ name: "resistance-tools-contract-check", version: catalog.serverVersion });
   try {
     await client.connect(new StreamableHTTPClientTransport(endpointUrl));
+    assert.deepEqual(client.getServerVersion(), {
+      name: "resistance-tools-mcp",
+      version: catalog.serverVersion,
+    }, "live MCP server identity or version drift");
     const tools = await client.listTools();
     const resources = await client.listResources();
     assertToolDescriptors(tools.tools, { requireTopLevel: false });

@@ -16,7 +16,7 @@ test("repository packages the current remote MCP for Codex and Claude Code", asy
   const mcp = await readJson(".mcp.json");
 
   assert.equal(pkg.private, true);
-  assert.equal(pkg.version, "0.2.2");
+  assert.equal(pkg.version, "0.2.3");
   assert.equal(catalog.serverVersion, pkg.version);
   assert.equal(registry.version, pkg.version);
   assert.equal(codexPlugin.version, pkg.version);
@@ -50,6 +50,34 @@ test("plugin exposes one Agent Skill with five bundled references", async () => 
   assert.match(metadata, /value: "resistance-tools-mcp"/);
   const readme = await read("README.md");
   assert.match(readme, /invoked as `\$resistance-tools-skill`/i);
+  for (const command of [
+    "codex mcp logout resistance-tools",
+    "codex mcp remove resistance-tools",
+    "codex mcp logout resistance-tools-mcp",
+    "codex mcp remove resistance-tools-mcp",
+    "codex plugin remove resistance-tools@resistance-tools",
+    "codex plugin remove resistance-tools-mcp@resistance-tools",
+    "codex plugin marketplace remove resistance-tools",
+    "codex plugin marketplace add TONresistor/resistance-tools-mcp@main",
+    "codex plugin add resistance-tools-mcp@resistance-tools",
+    "codex mcp login resistance-tools-mcp",
+  ]) {
+    assert.ok(readme.includes(command), `README missing migration command: ${command}`);
+    assert.ok(skill.includes(command), `SKILL.md missing migration command: ${command}`);
+  }
+  assert.match(readme, /invalid_target/);
+  assert.match(skill, /invalid_target/);
+  for (const command of [
+    "claude plugin marketplace add TONresistor/resistance-tools-mcp@main",
+    "claude plugin install resistance-tools-mcp@resistance-tools",
+    "claude mcp login resistance-tools-mcp",
+    "codex plugin marketplace upgrade resistance-tools",
+    "claude plugin marketplace update resistance-tools",
+    "claude plugin update resistance-tools-mcp@resistance-tools",
+  ]) {
+    assert.ok(readme.includes(command), `README missing current command: ${command}`);
+    assert.ok(skill.includes(command), `SKILL.md missing current command: ${command}`);
+  }
   assert.match(skill, /Do not enumerate the user's wallet, sites, domains, Bags, collections, or items/i);
   assert.match(skill, /Never create a throwaway project as an intermediate step/i);
   for (const name of referenceNames) {
