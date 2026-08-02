@@ -1,0 +1,15 @@
+interface:
+  display_name: "Storage"
+  short_description: "Manage TON Storage Bags and paid providers"
+  default_prompt: "Use $storage to manage a TON Storage Bag or paid provider."
+
+dependencies:
+  tools:
+    - type: "mcp"
+      value: "resistance-tools"
+      description: "Hosted Resistance Tools MCP"
+      transport: "streamable_http"
+      url: "https://app.resistance.dog/api/mcp"
+
+policy:
+  allow_implicit_invocation: true

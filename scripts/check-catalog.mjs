@@ -1,30 +1,100 @@
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
+import { readFile, readdir } from "node:fs/promises";
 import { allScopes, annotationProfiles, expectedToolContracts } from "./catalog-contract.mjs";
 
 const read = (path) => readFile(new URL(`../${path}`, import.meta.url), "utf8");
-const catalog = JSON.parse(await read("catalog/mcp.json"));
-const registry = JSON.parse(await read("server.json"));
-const pkg = JSON.parse(await read("package.json"));
-const readme = await read("README.md");
-const skill = await read("SKILL.md");
-const toolsDoc = await read("docs/tools.md");
-const templatesDoc = await read("docs/templates.md");
-const authDoc = await read("docs/auth.md");
-const responseDoc = await read("docs/response-style.md");
-const openAiYaml = await read("agents/openai.yaml");
+const readJson = async (path) => JSON.parse(await read(path));
 
-const methodDocPaths = [
-  "docs/core-methods.md",
-  "docs/sites-methods.md",
-  "docs/dns-methods.md",
-  "docs/subdomains-methods.md",
-  "docs/storage-methods.md",
-];
-const methodDocs = await Promise.all(methodDocPaths.map(async (path) => [path, await read(path)]));
-const storageDoc = methodDocs.find(([path]) => path === "docs/storage-methods.md")?.[1] ?? "";
+const catalog = await readJson("catalog/mcp.json");
+const registry = await readJson("server.json");
+const pkg = await readJson("package.json");
+const codexPlugin = await readJson(".codex-plugin/plugin.json");
+const claudePlugin = await readJson(".claude-plugin/plugin.json");
+const mcpConfig = await readJson(".mcp.json");
+const readme = await read("README.md");
+
+const skillNames = ["domains", "sites", "storage", "transactions", "wallet"];
+const skillToolNames = {
+  wallet: [
+    "auth.status",
+    "auth.policy",
+    "wallet.me",
+    "mcp.access.list",
+    "mcp.audit.list",
+    "mcp.audit.summary",
+    "mcp.access.revoke_consent",
+  ],
+  sites: [
+    "sites.list",
+    "sites.get_content",
+    "sites.list_releases",
+    "media.upload_image",
+    "sites.publish_files",
+    "sites.publish_template",
+    "sites.rollback",
+    "sites.delete",
+    "deployments.list",
+  ],
+  domains: [
+    "dns.lookup",
+    "domains.list",
+    "domains.records",
+    "subdomains.list_collections",
+    "subdomains.list_items",
+    "subdomains.get_collection",
+    "subdomains.get_item",
+    "subdomains.control",
+  ],
+  storage: [
+    "storage.list_bags",
+    "storage.bag_details",
+    "storage.providers",
+    "storage.provider_funding_session",
+    "storage.provider_funding_preview",
+    "storage.provider_quote",
+    "storage.provider_operation",
+    "storage.create_bag",
+    "storage.pin_bag",
+    "storage.delete_bag",
+  ],
+  transactions: [
+    "sites.send_link_tx",
+    "payments.send_tx",
+    "dns.send_record_tx",
+    "dns.send_name_tx",
+    "dns.send_renew_tx",
+    "subdomains.create_collection_tx",
+    "subdomains.mint_tx",
+    "subdomains.collection_action_tx",
+    "subdomains.transfer_item_tx",
+    "subdomains.recovery_tx",
+    "storage.send_bag_link_tx",
+    "storage.send_provider_tx",
+  ],
+};
+
+const skillDirectories = (await readdir(new URL("../skills/", import.meta.url), { withFileTypes: true }))
+  .filter((entry) => entry.isDirectory())
+  .map((entry) => entry.name)
+  .sort();
+assert.deepEqual(skillDirectories, skillNames);
+
+const skills = new Map();
+const toolReferences = new Map();
+const openAiMetadata = new Map();
+for (const name of skillNames) {
+  skills.set(name, await read(`skills/${name}/SKILL.md`));
+  toolReferences.set(name, await read(`skills/${name}/references/tools.md`));
+  openAiMetadata.set(name, await read(`skills/${name}/agents/openai.yaml`));
+}
+const templatesReference = await read("skills/sites/references/templates.md");
+
 const expectedResources = [
-  "tonsite://wallet", "tonsite://sites", "tonsite://deployments", "tonsite://domains", "tonsite://bags",
+  "tonsite://wallet",
+  "tonsite://sites",
+  "tonsite://deployments",
+  "tonsite://domains",
+  "tonsite://bags",
 ];
 const expectedTemplates = ["links", "blog", "redirect", "token", "sale", "tip"];
 const endpoint = "https://app.resistance.dog/api/mcp";
@@ -33,6 +103,8 @@ const registryName = "io.github.TONresistor/resistance-tools-mcp";
 assert.equal(pkg.private, true);
 assert.equal(pkg.version, catalog.serverVersion);
 assert.equal(pkg.version, registry.version);
+assert.equal(pkg.version, codexPlugin.version);
+assert.equal(pkg.version, claudePlugin.version);
 assert.equal("bin" in pkg, false);
 assert.equal("publishConfig" in pkg, false);
 
@@ -58,46 +130,93 @@ for (const tool of catalog.remoteTools) {
   assert.ok(annotationProfiles[tool.annotations], `unknown annotation profile for ${tool.name}`);
 }
 
-for (const { name } of expectedToolContracts) assert.ok(toolsDoc.includes(`\`${name}\``), `docs/tools.md missing ${name}`);
-for (const uri of expectedResources) assert.ok(toolsDoc.includes(`\`${uri}\``), `docs/tools.md missing ${uri}`);
-for (const template of expectedTemplates) assert.ok(templatesDoc.includes(`\`${template}\``), `docs/templates.md missing ${template}`);
-for (const scope of allScopes) assert.ok(authDoc.includes(`\`${scope}\``), `docs/auth.md missing ${scope}`);
+assert.equal(codexPlugin.name, "resistance-tools");
+assert.equal(codexPlugin.skills, "./skills/");
+assert.equal(codexPlugin.mcpServers, "./.mcp.json");
+assert.equal(codexPlugin.author?.name, "Digital Resistance");
+assert.equal(codexPlugin.interface?.displayName, "Resistance Tools");
+assert.ok(codexPlugin.interface?.defaultPrompt);
+assert.equal(claudePlugin.name, "resistance-tools");
+assert.equal(claudePlugin.author?.name, "Digital Resistance");
+assert.deepEqual(mcpConfig, {
+  mcpServers: {
+    "resistance-tools": {
+      type: "http",
+      url: endpoint,
+    },
+  },
+});
+
+for (const name of skillNames) {
+  const skill = skills.get(name);
+  const metadata = openAiMetadata.get(name);
+  assert.match(skill, new RegExp(`^---\\nname: ${name}\\ndescription: [^\\n]+\\n---\\n`));
+  assert.ok(skill.includes("[references/tools.md](references/tools.md)"), `${name} does not route to its tool reference`);
+  assert.equal(skill.includes("TODO"), false, `${name} contains a TODO`);
+  assert.ok(skill.split("\n").length < 500, `${name} SKILL.md must stay under 500 lines`);
+  assert.match(metadata, new RegExp(`default_prompt: "[^"]*\\$${name}[^\"]*"`));
+  assert.match(metadata, /value: "resistance-tools"/);
+  assert.match(metadata, /transport: "streamable_http"/);
+  assert.ok(metadata.includes(`url: "${endpoint}"`));
+  assert.match(metadata, /allow_implicit_invocation: true/);
+}
+assert.ok(skills.get("sites").includes("[references/templates.md](references/templates.md)"));
 
 const documentedMethods = [];
-for (const [path, doc] of methodDocs) {
+for (const name of skillNames) {
+  const doc = toolReferences.get(name);
   const headings = [...doc.matchAll(/^### `([^`]+)`$/gm)];
+  const expectedForSkill = skillToolNames[name];
+  assert.deepEqual(
+    headings.map((heading) => heading[1]).sort(),
+    [...expectedForSkill].sort(),
+    `${name} has the wrong tool coverage`,
+  );
   for (let index = 0; index < headings.length; index += 1) {
     const heading = headings[index];
     const section = doc.slice(heading.index, headings[index + 1]?.index ?? doc.length);
     documentedMethods.push(heading[1]);
-    for (const marker of ["**Use:**", "**Method:**", "**Verify:**", "**Report:**"]) {
-      assert.ok(section.includes(marker), `${path} ${heading[1]} missing ${marker}`);
+    for (const marker of ["**Permission:**", "**Input:**", "**Use:**", "**Method:**", "**Verify:**", "**Report:**"]) {
+      assert.ok(section.includes(marker), `${name} ${heading[1]} missing ${marker}`);
     }
   }
 }
-assert.equal(documentedMethods.length, 46, "method guides must document exactly 46 tools");
-assert.equal(new Set(documentedMethods).size, 46, "method guides contain duplicate tool sections");
+assert.equal(documentedMethods.length, 46, "skills must document exactly 46 tools");
+assert.equal(new Set(documentedMethods).size, 46, "skills contain duplicate tool methods");
 assert.deepEqual(documentedMethods.sort(), expectedToolContracts.map(({ name }) => name).sort());
 
-for (const path of [...methodDocPaths, "docs/response-style.md", "docs/tools.md", "docs/templates.md", "docs/auth.md"]) {
-  assert.ok(skill.includes(`](${path})`), `SKILL.md does not route to ${path}`);
+const transactionMethods = skillToolNames.transactions;
+assert.deepEqual(
+  [...transactionMethods].sort(),
+  expectedToolContracts.filter(({ scope }) => scope === "transactions:request").map(({ name }) => name).sort(),
+);
+
+for (const template of expectedTemplates) {
+  assert.ok(templatesReference.includes(`\`${template}\``), `template reference missing ${template}`);
+}
+const combinedReferences = [...toolReferences.values()].join("\n");
+for (const scope of allScopes) {
+  assert.ok(combinedReferences.includes(`\`${scope}\``), `tool references missing permission ${scope}`);
+}
+for (const uri of expectedResources) {
+  assert.ok(toolReferences.get("wallet").includes(`\`${uri}\``), `wallet reference missing ${uri}`);
 }
 
 assert.match(readme, /codex mcp add resistance-tools/);
 assert.match(readme, /codex mcp login resistance-tools/);
 assert.match(readme, /claude mcp add --transport http resistance-tools/);
-assert.match(readme, /Streamable HTTP/);
-assert.match(authDoc, /user selects? (?:them|the permissions)/i);
-assert.match(authDoc, /`Approve all`/);
-assert.match(authDoc, /`Disapprove all`/);
-for (const [name, text] of Object.entries({ README: readme, auth: authDoc })) {
-  assert.match(text, /run `\/mcp`/i, `${name} missing current Claude Code OAuth flow`);
+assert.match(readme, /tools only; they do not install the bundled skills/i);
+for (const name of skillNames) {
+  assert.ok(readme.includes(`\`${name}\``), `README missing skill ${name}`);
 }
-assert.doesNotMatch(`${readme}\n${skill}\n${authDoc}`, /--scopes|--oauth-resource/);
-assert.match(skill, /user select(?:s)? permissions on the approval page/i);
-assert.doesNotMatch(skill, /## Scope choice/i);
 
-const publicDocs = [readme, skill, toolsDoc, templatesDoc, authDoc, responseDoc, ...methodDocs.map(([, doc]) => doc)].join("\n");
+const publicGuidance = [
+  readme,
+  ...skills.values(),
+  ...toolReferences.values(),
+  templatesReference,
+  ...openAiMetadata.values(),
+].join("\n");
 for (const retired of [
   "dns.prepare_record_tx",
   "dns.prepare_site_record_tx",
@@ -108,24 +227,21 @@ for (const retired of [
   "payments:send_tx",
   "subdomains:send_tx",
 ]) {
-  assert.equal(publicDocs.includes(retired), false, `public documentation still contains retired name ${retired}`);
+  assert.equal(publicGuidance.includes(retired), false, `guidance contains retired name ${retired}`);
 }
-assert.doesNotMatch(publicDocs, /npm install|\bnpx\b|stdio|bridge|auth\.(device|wallet)_/i);
+assert.doesNotMatch(publicGuidance, /--scopes|--oauth-resource|auth\.(device|wallet)_/i);
 
 for (const marker of ["Domain:", "Gateway:", "TON Site:", "Release:"]) {
-  assert.ok(responseDoc.includes(marker), `response style missing ${marker}`);
+  assert.ok(skills.get("sites").includes(marker), `sites result contract missing ${marker}`);
 }
 for (const state of ["prepared", "awaiting confirmation", "submitted", "confirmed", "published", "live"]) {
-  assert.ok(`${skill}\n${responseDoc}`.includes(state), `response guidance missing state ${state}`);
+  assert.ok(publicGuidance.includes(state), `guidance missing state ${state}`);
 }
-assert.match(skill, /operationId.*MCP confirmation request/i);
-assert.match(storageDoc, /never pass the MCP confirmation request's `operationId`/i);
-assert.match(responseDoc, /do not add boilerplate explaining that the agent cannot sign/i);
+assert.match(skills.get("transactions"), /operationId.*MCP confirmation request/i);
+assert.match(skills.get("storage"), /Never pass it to `storage\.provider_operation`/i);
+assert.match(skills.get("transactions"), /Do not add boilerplate saying the agent cannot sign/i);
+assert.match(skills.get("wallet"), /Let the user select permissions/i);
 
-assert.match(openAiYaml, /default_prompt: "Use \$resistance-tools-mcp/);
-assert.match(openAiYaml, /value: "resistance-tools"/);
-assert.match(openAiYaml, /transport: "streamable_http"/);
-assert.ok(openAiYaml.includes(`url: "${endpoint}"`));
-assert.match(openAiYaml, /allow_implicit_invocation: true/);
+await assert.rejects(read("SKILL.md"), (error) => error?.code === "ENOENT");
 
-console.log("46 live tools, method guides, metadata and user guidance are aligned");
+console.log("5 Agent Skills, 46 live tools, cross-client plugin metadata, and user guidance are aligned");

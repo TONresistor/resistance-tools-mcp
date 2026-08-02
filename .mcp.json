@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "resistance-tools": {
+      "type": "http",
+      "url": "https://app.resistance.dog/api/mcp"
+    }
+  }
+}

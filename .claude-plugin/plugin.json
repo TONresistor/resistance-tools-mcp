@@ -1,0 +1,12 @@
+{
+  "name": "resistance-tools",
+  "version": "0.2.0",
+  "description": "Operate Resistance Tools for TON Sites, DNS, Subdomains, Storage, wallet access, and wallet-confirmed transactions.",
+  "author": {
+    "name": "Digital Resistance",
+    "url": "https://resistance.dog"
+  },
+  "homepage": "https://github.com/TONresistor/resistance-tools-mcp#readme",
+  "repository": "https://github.com/TONresistor/resistance-tools-mcp",
+  "license": "MIT"
+}

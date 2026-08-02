@@ -1,0 +1,34 @@
+{
+  "name": "resistance-tools",
+  "version": "0.2.0",
+  "description": "Operate Resistance Tools for TON Sites, DNS, Subdomains, Storage, wallet access, and wallet-confirmed transactions.",
+  "author": {
+    "name": "Digital Resistance",
+    "url": "https://resistance.dog"
+  },
+  "homepage": "https://github.com/TONresistor/resistance-tools-mcp#readme",
+  "repository": "https://github.com/TONresistor/resistance-tools-mcp",
+  "license": "MIT",
+  "keywords": [
+    "mcp",
+    "ton",
+    "ton-sites",
+    "ton-dns",
+    "ton-storage"
+  ],
+  "skills": "./skills/",
+  "mcpServers": "./.mcp.json",
+  "interface": {
+    "displayName": "Resistance Tools",
+    "shortDescription": "Operate TON Sites, DNS, and Storage safely.",
+    "longDescription": "Connect to Resistance Tools and follow focused workflows for sites, domains, storage, wallet access, and manually confirmed transactions.",
+    "developerName": "Digital Resistance",
+    "category": "Productivity",
+    "capabilities": [
+      "Read",
+      "Write"
+    ],
+    "websiteURL": "https://app.resistance.dog",
+    "defaultPrompt": "Use Resistance Tools to complete this task and report the verified result."
+  }
+}

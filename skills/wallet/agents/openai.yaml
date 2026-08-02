@@ -1,0 +1,15 @@
+interface:
+  display_name: "Wallet"
+  short_description: "Handle Resistance Tools identity and access"
+  default_prompt: "Use $wallet to check Resistance Tools authentication or access."
+
+dependencies:
+  tools:
+    - type: "mcp"
+      value: "resistance-tools"
+      description: "Hosted Resistance Tools MCP"
+      transport: "streamable_http"
+      url: "https://app.resistance.dog/api/mcp"
+
+policy:
+  allow_implicit_invocation: true
