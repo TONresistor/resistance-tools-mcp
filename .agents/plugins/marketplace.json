@@ -5,7 +5,7 @@
   },
   "plugins": [
     {
-      "name": "resistance-tools",
+      "name": "resistance-tools-mcp",
       "source": {
         "source": "local",
         "path": "./"

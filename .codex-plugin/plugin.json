@@ -1,6 +1,6 @@
 {
-  "name": "resistance-tools",
-  "version": "0.2.1",
+  "name": "resistance-tools-mcp",
+  "version": "0.2.2",
   "description": "Operate Resistance Tools for TON Sites, DNS, Subdomains, Storage, wallet access, and wallet-confirmed transactions.",
   "author": {
     "name": "Digital Resistance",
@@ -29,6 +29,6 @@
       "Write"
     ],
     "websiteURL": "https://app.resistance.dog",
-    "defaultPrompt": "Use Resistance Tools to complete this task and report the verified result."
+    "defaultPrompt": "Use $resistance-tools-skill to complete this task and report the verified result."
   }
 }

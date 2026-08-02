@@ -3,7 +3,7 @@
   "registryName": "io.github.TONresistor/resistance-tools-mcp",
   "endpoint": "https://app.resistance.dog/api/mcp",
   "transport": "streamable-http",
-  "serverVersion": "0.2.1",
+  "serverVersion": "0.2.2",
   "remoteTools": [
     { "name": "auth.status", "scope": "public", "annotations": "local-read" },
     { "name": "auth.policy", "scope": "public", "annotations": "local-read" },

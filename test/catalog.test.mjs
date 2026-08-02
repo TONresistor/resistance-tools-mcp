@@ -16,7 +16,7 @@ test("repository packages the current remote MCP for Codex and Claude Code", asy
   const mcp = await readJson(".mcp.json");
 
   assert.equal(pkg.private, true);
-  assert.equal(pkg.version, "0.2.1");
+  assert.equal(pkg.version, "0.2.2");
   assert.equal(catalog.serverVersion, pkg.version);
   assert.equal(registry.version, pkg.version);
   assert.equal(codexPlugin.version, pkg.version);
@@ -25,13 +25,13 @@ test("repository packages the current remote MCP for Codex and Claude Code", asy
   assert.deepEqual(registry.remotes, [{ type: "streamable-http", url: catalog.endpoint }]);
   assert.deepEqual(mcp, {
     mcpServers: {
-      "resistance-tools": { type: "http", url: catalog.endpoint },
+      "resistance-tools-mcp": { type: "http", url: catalog.endpoint },
     },
   });
   assert.equal(codexPlugin.skills, "./skills/");
   assert.equal(codexPlugin.mcpServers, "./.mcp.json");
-  assert.equal(codexPlugin.name, "resistance-tools");
-  assert.equal(claudePlugin.name, "resistance-tools");
+  assert.equal(codexPlugin.name, "resistance-tools-mcp");
+  assert.equal(claudePlugin.name, "resistance-tools-mcp");
   assert.deepEqual(catalog.remoteTools, expectedToolContracts);
   assert.equal(catalog.remoteTools.length, 46);
 });
@@ -41,13 +41,15 @@ test("plugin exposes one Agent Skill with five bundled references", async () => 
     .filter((entry) => entry.isDirectory())
     .map((entry) => entry.name)
     .sort();
-  assert.deepEqual(directories, ["resistance-tools"]);
+  assert.deepEqual(directories, ["resistance-tools-skill"]);
 
-  const skill = await read("skills/resistance-tools/SKILL.md");
-  const metadata = await read("skills/resistance-tools/agents/openai.yaml");
-  assert.match(skill, /^---\nname: resistance-tools\ndescription: [^\n]+\n---\n/);
-  assert.match(metadata, /\$resistance-tools/);
-  assert.match(metadata, /value: "resistance-tools"/);
+  const skill = await read("skills/resistance-tools-skill/SKILL.md");
+  const metadata = await read("skills/resistance-tools-skill/agents/openai.yaml");
+  assert.match(skill, /^---\nname: resistance-tools-skill\ndescription: [^\n]+\n---\n/);
+  assert.match(metadata, /\$resistance-tools-skill/);
+  assert.match(metadata, /value: "resistance-tools-mcp"/);
+  const readme = await read("README.md");
+  assert.match(readme, /invoked as `\$resistance-tools-skill`/i);
   assert.match(skill, /Do not enumerate the user's wallet, sites, domains, Bags, collections, or items/i);
   assert.match(skill, /Never create a throwaway project as an intermediate step/i);
   for (const name of referenceNames) {
@@ -58,7 +60,7 @@ test("plugin exposes one Agent Skill with five bundled references", async () => 
 test("the five references cover every remote tool exactly once", async () => {
   const methods = [];
   for (const name of referenceNames) {
-    const doc = await read(`skills/resistance-tools/references/${name}.md`);
+    const doc = await read(`skills/resistance-tools-skill/references/${name}.md`);
     const headings = [...doc.matchAll(/^### `([^`]+)`$/gm)];
     for (let index = 0; index < headings.length; index += 1) {
       const section = doc.slice(headings[index].index, headings[index + 1]?.index ?? doc.length);

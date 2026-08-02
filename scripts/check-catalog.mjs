@@ -14,8 +14,8 @@ const codexMarketplace = await readJson(".agents/plugins/marketplace.json");
 const claudeMarketplace = await readJson(".claude-plugin/marketplace.json");
 const mcpConfig = await readJson(".mcp.json");
 const readme = await read("README.md");
-const skill = await read("skills/resistance-tools/SKILL.md");
-const openAiMetadata = await read("skills/resistance-tools/agents/openai.yaml");
+const skill = await read("skills/resistance-tools-skill/SKILL.md");
+const openAiMetadata = await read("skills/resistance-tools-skill/agents/openai.yaml");
 const releaseWorkflow = await read(".github/workflows/release.yml");
 
 const referenceToolNames = {
@@ -79,7 +79,7 @@ const referenceToolNames = {
 const referenceNames = Object.keys(referenceToolNames).sort();
 const references = new Map();
 for (const name of referenceNames) {
-  references.set(name, await read(`skills/resistance-tools/references/${name}.md`));
+  references.set(name, await read(`skills/resistance-tools-skill/references/${name}.md`));
 }
 
 const expectedResources = [
@@ -123,18 +123,18 @@ for (const tool of catalog.remoteTools) {
   assert.ok(annotationProfiles[tool.annotations], `unknown annotation profile for ${tool.name}`);
 }
 
-assert.equal(codexPlugin.name, "resistance-tools");
+assert.equal(codexPlugin.name, "resistance-tools-mcp");
 assert.equal(codexPlugin.skills, "./skills/");
 assert.equal(codexPlugin.mcpServers, "./.mcp.json");
 assert.equal(codexPlugin.author?.name, "Digital Resistance");
 assert.equal(codexPlugin.interface?.displayName, "Resistance Tools");
-assert.ok(codexPlugin.interface?.defaultPrompt);
-assert.equal(claudePlugin.name, "resistance-tools");
+assert.match(codexPlugin.interface?.defaultPrompt ?? "", /\$resistance-tools-skill/);
+assert.equal(claudePlugin.name, "resistance-tools-mcp");
 assert.equal(claudePlugin.author?.name, "Digital Resistance");
 assert.equal(codexMarketplace.name, "resistance-tools");
 assert.deepEqual(codexMarketplace.plugins, [
   {
-    name: "resistance-tools",
+    name: "resistance-tools-mcp",
     source: { source: "local", path: "./" },
     policy: { installation: "AVAILABLE", authentication: "ON_INSTALL" },
     category: "Productivity",
@@ -144,14 +144,14 @@ assert.equal(claudeMarketplace.name, "resistance-tools");
 assert.equal(claudeMarketplace.owner?.name, "Digital Resistance");
 assert.deepEqual(claudeMarketplace.plugins, [
   {
-    name: "resistance-tools",
+    name: "resistance-tools-mcp",
     source: "./",
     description: claudePlugin.description,
   },
 ]);
 assert.deepEqual(mcpConfig, {
   mcpServers: {
-    "resistance-tools": { type: "http", url: endpoint },
+    "resistance-tools-mcp": { type: "http", url: endpoint },
   },
 });
 
@@ -159,15 +159,15 @@ const skillDirectories = (await readdir(new URL("../skills/", import.meta.url), 
   .filter((entry) => entry.isDirectory())
   .map((entry) => entry.name)
   .sort();
-assert.deepEqual(skillDirectories, ["resistance-tools"]);
-assert.match(skill, /^---\nname: resistance-tools\ndescription: [^\n]+\n---\n/);
+assert.deepEqual(skillDirectories, ["resistance-tools-skill"]);
+assert.match(skill, /^---\nname: resistance-tools-skill\ndescription: [^\n]+\n---\n/);
 assert.equal(skill.includes("TODO"), false);
 assert.ok(skill.split("\n").length < 500);
 for (const name of referenceNames) {
   assert.ok(skill.includes(`[references/${name}.md](references/${name}.md)`), `skill does not route to ${name}.md`);
 }
-assert.match(openAiMetadata, /default_prompt: "Use \$resistance-tools/);
-assert.match(openAiMetadata, /value: "resistance-tools"/);
+assert.match(openAiMetadata, /default_prompt: "Use \$resistance-tools-skill/);
+assert.match(openAiMetadata, /value: "resistance-tools-mcp"/);
 assert.match(openAiMetadata, /transport: "streamable_http"/);
 assert.ok(openAiMetadata.includes(`url: "${endpoint}"`));
 assert.match(openAiMetadata, /allow_implicit_invocation: true/);
@@ -209,17 +209,22 @@ for (const uri of expectedResources) {
   assert.ok(references.get("wallet").includes(`\`${uri}\``), `wallet.md missing ${uri}`);
 }
 
-assert.match(readme, /one `resistance-tools` skill/i);
+assert.match(readme, /one `resistance-tools-skill` skill/i);
+assert.match(readme, /invoked as `\$resistance-tools-skill`/i);
 assert.match(readme, /codex plugin marketplace add TONresistor\/resistance-tools-mcp --ref main/);
-assert.match(readme, /codex plugin add resistance-tools@resistance-tools/);
+assert.match(readme, /codex plugin add resistance-tools-mcp@resistance-tools/);
 assert.match(readme, /claude plugin marketplace add TONresistor\/resistance-tools-mcp@main/);
-assert.match(readme, /claude plugin install resistance-tools@resistance-tools/);
-assert.match(readme, /codex mcp add resistance-tools --url https:\/\/app\.resistance\.dog\/api\/mcp/);
-assert.match(readme, /codex mcp login resistance-tools/);
-assert.match(readme, /claude mcp add --transport http resistance-tools/);
+assert.match(readme, /claude plugin install resistance-tools-mcp@resistance-tools/);
+assert.match(readme, /codex mcp add resistance-tools-mcp --url https:\/\/app\.resistance\.dog\/api\/mcp/);
+assert.match(readme, /codex mcp login resistance-tools-mcp/);
+assert.match(readme, /codex plugin remove resistance-tools@resistance-tools/);
+assert.match(readme, /codex plugin marketplace upgrade resistance-tools/);
+assert.match(readme, /claude plugin uninstall resistance-tools@resistance-tools/);
+assert.match(readme, /claude plugin marketplace update resistance-tools/);
+assert.match(readme, /claude mcp add --transport http resistance-tools-mcp/);
 assert.match(readme, /tools only; they do not install the bundled skills/i);
 assert.match(readme, /`main` is the stable branch used for installation and releases\. Development happens on `dev`\./);
-assert.match(skill, /codex mcp add resistance-tools --url https:\/\/app\.resistance\.dog\/api\/mcp/);
+assert.match(skill, /codex mcp add resistance-tools-mcp --url https:\/\/app\.resistance\.dog\/api\/mcp/);
 assert.match(releaseWorkflow, /test "\$GITHUB_REF" = "refs\/heads\/main"/);
 assert.doesNotMatch(releaseWorkflow, /refs\/heads\/dev/);
 

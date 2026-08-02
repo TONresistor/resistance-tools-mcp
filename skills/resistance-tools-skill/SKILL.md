@@ -1,19 +1,19 @@
 ---
-name: resistance-tools
+name: resistance-tools-skill
 description: Operate the complete Resistance Tools MCP for TON Sites, TON DNS, Subdomains, TON Storage, wallet access, audit, permissions, paid providers, and manually confirmed transactions. Use whenever an agent must select or sequence Resistance Tools tools, validate the resulting state, recover from an MCP error, or return the correct concise links and identifiers to the user.
 ---
 
 # Resistance Tools
 
-Use the hosted `resistance-tools` MCP and treat its runtime tool schema and structured results as canonical. Complete the requested workflow, verify the resulting state, and give the user the useful outcome instead of raw tool output.
+Use the hosted `resistance-tools-mcp` MCP and treat its runtime tool schema and structured results as canonical. Complete the requested workflow, verify the resulting state, and give the user the useful outcome instead of raw tool output.
 
 ## Connection and permissions
 
 For Codex MCP-only setup:
 
 ```bash
-codex mcp add resistance-tools --url https://app.resistance.dog/api/mcp
-codex mcp login resistance-tools
+codex mcp add resistance-tools-mcp --url https://app.resistance.dog/api/mcp
+codex mcp login resistance-tools-mcp
 ```
 
 If the MCP is already registered, do not add it again. Use only the client's native login flow. Let the user select permissions or use `Approve all` on the approval page; never choose permissions for them. Never request a seed phrase, private key, proof, signature, bearer token, or wallet export.

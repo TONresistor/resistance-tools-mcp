@@ -6,7 +6,7 @@
   },
   "plugins": [
     {
-      "name": "resistance-tools",
+      "name": "resistance-tools-mcp",
       "source": "./",
       "description": "Operate Resistance Tools for TON Sites, DNS, Subdomains, Storage, wallet access, and wallet-confirmed transactions."
     }

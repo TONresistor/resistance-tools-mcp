@@ -1,12 +1,12 @@
 interface:
   display_name: "Resistance Tools"
   short_description: "Operate all Resistance Tools MCP workflows"
-  default_prompt: "Use $resistance-tools to complete this Resistance Tools task and report the verified result."
+  default_prompt: "Use $resistance-tools-skill to complete this Resistance Tools task and report the verified result."
 
 dependencies:
   tools:
     - type: "mcp"
-      value: "resistance-tools"
+      value: "resistance-tools-mcp"
       description: "Hosted Resistance Tools MCP"
       transport: "streamable_http"
       url: "https://app.resistance.dog/api/mcp"

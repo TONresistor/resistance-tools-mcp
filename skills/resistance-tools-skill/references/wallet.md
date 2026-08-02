@@ -6,7 +6,7 @@ Use the live runtime schema when it differs from this bundled reference. Never e
 
 Call `auth.status` only to troubleshoot authentication. Use `wallet.me` only when the user asks about identity/delegation or owner versus actor is genuinely ambiguous; normal protected tools already enforce the wallet boundary. Use access or audit tools only for an explicit access-management or audit task.
 
-On `insufficient_scope`, let the user reopen the client's native approval flow and select permissions; do not choose them. If Codex login is required, give only `codex mcp login resistance-tools`.
+On `insufficient_scope`, let the user reopen the client's native approval flow and select permissions; do not choose them. If Codex login is required, give only `codex mcp login resistance-tools-mcp`.
 
 Revoke only after explicit intent: list access, resolve the exact consent/client, send matching confirmation ids, then list access again. Report authentication, relevant identity/access state, or audit result briefly without tokens or full addresses by default.
 
@@ -17,7 +17,7 @@ Revoke only after explicit intent: list access, resolve the exact consent/client
 - **Use:** Diagnose whether the current MCP session is authenticated.
 - **Method:** Call before troubleshooting a protected tool. Read the boolean `authenticated`; a session identifier alone is not authentication.
 - **Verify:** This read is the session evidence. Do not infer login from `codex mcp list` or from the server being configured.
-- **Report:** Say authenticated or not authenticated. For an unauthenticated Codex session, give only `codex mcp login resistance-tools`.
+- **Report:** Say authenticated or not authenticated. For an unauthenticated Codex session, give only `codex mcp login resistance-tools-mcp`.
 
 ### `auth.policy`
 
