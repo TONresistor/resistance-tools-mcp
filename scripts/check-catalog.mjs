@@ -10,10 +10,13 @@ const registry = await readJson("server.json");
 const pkg = await readJson("package.json");
 const codexPlugin = await readJson(".codex-plugin/plugin.json");
 const claudePlugin = await readJson(".claude-plugin/plugin.json");
+const codexMarketplace = await readJson(".agents/plugins/marketplace.json");
+const claudeMarketplace = await readJson(".claude-plugin/marketplace.json");
 const mcpConfig = await readJson(".mcp.json");
 const readme = await read("README.md");
 const skill = await read("skills/resistance-tools/SKILL.md");
 const openAiMetadata = await read("skills/resistance-tools/agents/openai.yaml");
+const releaseWorkflow = await read(".github/workflows/release.yml");
 
 const referenceToolNames = {
   wallet: [
@@ -128,6 +131,24 @@ assert.equal(codexPlugin.interface?.displayName, "Resistance Tools");
 assert.ok(codexPlugin.interface?.defaultPrompt);
 assert.equal(claudePlugin.name, "resistance-tools");
 assert.equal(claudePlugin.author?.name, "Digital Resistance");
+assert.equal(codexMarketplace.name, "resistance-tools");
+assert.deepEqual(codexMarketplace.plugins, [
+  {
+    name: "resistance-tools",
+    source: { source: "local", path: "./" },
+    policy: { installation: "AVAILABLE", authentication: "ON_INSTALL" },
+    category: "Productivity",
+  },
+]);
+assert.equal(claudeMarketplace.name, "resistance-tools");
+assert.equal(claudeMarketplace.owner?.name, "Digital Resistance");
+assert.deepEqual(claudeMarketplace.plugins, [
+  {
+    name: "resistance-tools",
+    source: "./",
+    description: claudePlugin.description,
+  },
+]);
 assert.deepEqual(mcpConfig, {
   mcpServers: {
     "resistance-tools": { type: "http", url: endpoint },
@@ -189,10 +210,18 @@ for (const uri of expectedResources) {
 }
 
 assert.match(readme, /one `resistance-tools` skill/i);
-assert.match(readme, /codex mcp add resistance-tools/);
+assert.match(readme, /codex plugin marketplace add TONresistor\/resistance-tools-mcp --ref main/);
+assert.match(readme, /codex plugin add resistance-tools@resistance-tools/);
+assert.match(readme, /claude plugin marketplace add TONresistor\/resistance-tools-mcp@main/);
+assert.match(readme, /claude plugin install resistance-tools@resistance-tools/);
+assert.match(readme, /codex mcp add resistance-tools --url https:\/\/app\.resistance\.dog\/api\/mcp/);
 assert.match(readme, /codex mcp login resistance-tools/);
 assert.match(readme, /claude mcp add --transport http resistance-tools/);
 assert.match(readme, /tools only; they do not install the bundled skills/i);
+assert.match(readme, /`main` is the stable branch used for installation and releases\. Development happens on `dev`\./);
+assert.match(skill, /codex mcp add resistance-tools --url https:\/\/app\.resistance\.dog\/api\/mcp/);
+assert.match(releaseWorkflow, /test "\$GITHUB_REF" = "refs\/heads\/main"/);
+assert.doesNotMatch(releaseWorkflow, /refs\/heads\/dev/);
 
 const publicGuidance = [readme, skill, openAiMetadata, ...references.values()].join("\n");
 for (const retired of [

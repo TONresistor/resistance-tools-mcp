@@ -1,0 +1,14 @@
+{
+  "name": "resistance-tools",
+  "description": "Resistance Tools plugin for TON Sites, DNS, Subdomains, Storage, and wallet-confirmed transactions.",
+  "owner": {
+    "name": "Digital Resistance"
+  },
+  "plugins": [
+    {
+      "name": "resistance-tools",
+      "source": "./",
+      "description": "Operate Resistance Tools for TON Sites, DNS, Subdomains, Storage, wallet access, and wallet-confirmed transactions."
+    }
+  ]
+}

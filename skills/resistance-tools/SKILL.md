@@ -12,7 +12,7 @@ Use the hosted `resistance-tools` MCP and treat its runtime tool schema and stru
 For Codex MCP-only setup:
 
 ```bash
-codex mcp add resistance-tools
+codex mcp add resistance-tools --url https://app.resistance.dog/api/mcp
 codex mcp login resistance-tools
 ```
 

@@ -17,18 +17,39 @@ Together, those references contain the permission, inputs, method, verification,
 
 Installing the repository as a plugin loads both the skills and the MCP dependency in clients that support the corresponding plugin format.
 
+## Install the plugin
+
+The plugin installs the Agent Skill and registers the MCP server together.
+
+### Codex
+
+```bash
+codex plugin marketplace add TONresistor/resistance-tools-mcp --ref main
+codex plugin add resistance-tools@resistance-tools
+codex mcp login resistance-tools
+```
+
+### Claude Code
+
+```bash
+claude plugin marketplace add TONresistor/resistance-tools-mcp@main
+claude plugin install resistance-tools@resistance-tools
+```
+
+Run `/mcp`, select `resistance-tools`, and authenticate. The user selects permissions on the wallet approval page.
+
 ## MCP-only connection
 
 These commands connect the tools only; they do not install the bundled skills.
 
-## Codex
+### Codex
 
 ```bash
-codex mcp add resistance-tools
+codex mcp add resistance-tools --url https://app.resistance.dog/api/mcp
 codex mcp login resistance-tools
 ```
 
-## Claude Code
+### Claude Code
 
 ```bash
 claude mcp add --transport http resistance-tools https://app.resistance.dog/api/mcp
@@ -39,6 +60,8 @@ Run `/mcp`, select `resistance-tools`, and authenticate. The user selects permis
 ## Other clients
 
 Add `https://app.resistance.dog/api/mcp` as a Streamable HTTP MCP server and use the client's native OAuth flow.
+
+`main` is the stable branch used for installation and releases. Development happens on `dev`.
 
 ## License
 
