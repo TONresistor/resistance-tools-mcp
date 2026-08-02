@@ -1,12 +1,21 @@
 # Authentication and scopes
 
-Resistance Tools MCP uses OAuth bearer tokens. Prefer the MCP client's native remote HTTP OAuth flow.
+Resistance Tools MCP uses native remote OAuth. The client opens a wallet authorization page where you select the permissions to grant.
 
 ```bash
+codex mcp add resistance-tools \
+  --url https://app.resistance.dog/api/mcp \
+  --oauth-resource https://app.resistance.dog/api/mcp
 codex mcp login resistance-tools
 ```
 
-The default consent is read-only: `wallet:read sites:read deployments:read dns:read storage:read`.
+```bash
+claude mcp add --transport http resistance-tools https://app.resistance.dog/api/mcp
+```
+
+In Claude Code, run `/mcp`, select `resistance-tools`, and authenticate.
+
+The normal read permissions are selected by default. Writing and destructive permissions are off until you enable them on the approval page.
 
 ## Scopes
 
@@ -27,10 +36,4 @@ The default consent is read-only: `wallet:read sites:read deployments:read dns:r
 | `mcp:read` | Read MCP consents, sessions and audit |
 | `mcp:revoke` | Revoke a consent with exact confirmation |
 
-If an existing consent lacks `media:write`, start the OAuth login again and explicitly approve that scope. Write and destructive scopes are never added to the default read-only consent.
-
-## Optional stdio bridge
-
-The bridge supports browser wallet approval with `auth.device_start` / `auth.device_complete`, or agent-controlled wallet proof with `auth.wallet_challenge` / `auth.wallet_complete`.
-
-Local tokens are stored in `~/.resistance-tools-mcp/auth.json`. Change the path with `RESISTANCE_TOOLS_MCP_TOKEN_STORE`. Never share the file or its bearer tokens.
+If a tool returns `insufficient_scope`, run OAuth login again and enable the named permission on the approval page.

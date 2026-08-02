@@ -1,7 +1,8 @@
 {
-  "name": "@resistance-tools/mcp",
+  "name": "resistance-tools-mcp-repository",
   "version": "0.2.0",
-  "description": "Official Resistance Tools MCP bridge for wallet-authorized sites, media, DNS, deployments, and TON Storage.",
+  "private": true,
+  "description": "Source, metadata and contract checks for the Resistance Tools remote MCP server.",
   "type": "module",
   "homepage": "https://github.com/TONresistor/resistance-tools-mcp#readme",
   "repository": {
@@ -11,25 +12,12 @@
   "bugs": {
     "url": "https://github.com/TONresistor/resistance-tools-mcp/issues"
   },
-  "bin": {
-    "resistance-tools-mcp": "./bin/resistance-tools-mcp.mjs"
-  },
-  "files": [
-    "SKILL.md",
-    "bin",
-    "docs",
-    "examples",
-    "catalog",
-    "CHANGELOG.md",
-    "README.md",
-    "LICENSE"
-  ],
   "scripts": {
-    "check": "node --check bin/resistance-tools-mcp.mjs && node scripts/check-catalog.mjs",
+    "check": "node scripts/check-catalog.mjs",
     "check:catalog": "node scripts/check-catalog.mjs",
     "check:live": "node scripts/check-live.mjs",
-    "test": "node --test test/*.test.mjs",
-    "pack:dry": "npm pack --dry-run"
+    "check:registry": "node scripts/check-registry.mjs",
+    "test": "node --test test/*.test.mjs"
   },
   "keywords": [
     "mcp",
@@ -41,9 +29,6 @@
   ],
   "author": "Digital Resistance",
   "license": "MIT",
-  "publishConfig": {
-    "access": "public"
-  },
   "engines": {
     "node": ">=20"
   },

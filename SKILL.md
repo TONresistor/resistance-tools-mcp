@@ -5,7 +5,7 @@ description: Use when installing, configuring, or operating the Resistance Tools
 
 # Resistance Tools MCP
 
-Use the hosted remote HTTP MCP first. Use the npm stdio bridge only when native remote OAuth is unavailable or the agent controls a wallet and can sign TON proofs.
+Use the hosted Streamable HTTP MCP with native OAuth.
 
 ## Setup
 
@@ -16,25 +16,27 @@ codex mcp add resistance-tools \
 codex mcp login resistance-tools
 ```
 
-Fallback bridge:
-
 ```bash
-npm install -g @resistance-tools/mcp
+claude mcp add --transport http resistance-tools https://app.resistance.dog/api/mcp
 ```
+
+In Claude Code, run `/mcp`, select `resistance-tools`, and authenticate. For other clients, add the URL as a Streamable HTTP server and use native OAuth.
+
+Let the user select permissions on the approval page. Never enumerate, recommend or request individual scopes on their behalf. If access is insufficient, report it and direct the user back to the approval page without choosing for them.
 
 Never request a seed phrase, private key or raw bearer token.
 
-## Scope choice
+## Tool map
 
-Request only what the operation needs:
-
-- `wallet:read`, `sites:read`, `deployments:read`, `dns:read`, `storage:read` for default reads.
-- `sites:write` to publish files or templates.
-- `media:write` to upload template images.
-- `dns:prepare_tx` to prepare a transaction that still requires wallet approval.
-- `storage:write` to create or pin bags.
-- `sites:rollback`, `sites:delete`, `storage:delete` and `mcp:revoke` only for an explicitly confirmed destructive action.
-- `mcp:read` to inspect consents, sessions and audit records.
+- `auth.status` and `auth.policy`: inspect remote authentication and safety rules.
+- `wallet.me`: confirm the effective owner, actor and client before acting.
+- `sites.*`: list/read sites and releases, publish files or templates, rollback, or delete. Read before mutating; rollback and delete require exact confirmation fields.
+- `deployments.list`: inspect retained deployment history across the owner's sites.
+- `dns.lookup`: inspect any public `.ton` name. `domains.*` reads owned domains and records. `dns.prepare_*` only prepares an unsigned wallet transaction.
+- `media.upload_image`: upload a template image, then reuse the returned `media/...` path in `sites.publish_template`.
+- `storage.*`: list/details reads bags, `create_bag` seeds new files, `pin_bag` imports an existing BagID, and `delete_bag` requires exact confirmation.
+- `mcp.access.*` and `mcp.audit.*`: inspect consents, sessions and redacted activity; consent revocation invalidates matching tokens and requires exact confirmation.
+- `tonsite://wallet`, `tonsite://sites`, `tonsite://deployments`, `tonsite://domains` and `tonsite://bags`: read-only resource snapshots for the same owner context.
 
 ## Site publishing
 
@@ -50,4 +52,4 @@ For template images, call `media.upload_image` first and place its returned `med
 - DNS tools prepare TON Connect transactions; they do not broadcast or sign them.
 - Read back state after a mutation when the corresponding read tool is available.
 - Do not expose tokens, proofs, signatures or wallet secrets in the final response.
-- If a tool name or schema is uncertain, list tools or read [docs/tools.md](docs/tools.md).
+- Treat the runtime MCP tool schema as canonical. If a name or input is uncertain, list tools; use [docs/tools.md](docs/tools.md) only as a compact reference.

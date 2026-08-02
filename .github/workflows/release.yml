@@ -1,0 +1,167 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Version from server.json
+        required: true
+        default: "0.2.0"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: resistance-tools-mcp-release
+  cancel-in-progress: false
+
+env:
+  MCP_PUBLISHER_VERSION: "1.8.0"
+  MCP_PUBLISHER_SHA256: "1370446bbe74d562608e8005a6ccce02d146a661fbd78674e11cc70b9618d6cf"
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.version.outputs.tag }}
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24
+          cache: npm
+      - name: Validate source and version
+        id: version
+        env:
+          RELEASE_VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REF" = "refs/heads/dev"
+          node --input-type=module <<'NODE'
+          import assert from "node:assert/strict";
+          import { readFile } from "node:fs/promises";
+          const releaseVersion = process.env.RELEASE_VERSION;
+          assert.match(releaseVersion, /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-[0-9A-Za-z.-]+)?$/);
+          const pkg = JSON.parse(await readFile("package.json", "utf8"));
+          const catalog = JSON.parse(await readFile("catalog/mcp.json", "utf8"));
+          const server = JSON.parse(await readFile("server.json", "utf8"));
+          assert.equal(pkg.version, releaseVersion, "package.json version mismatch");
+          assert.equal(catalog.serverVersion, releaseVersion, "catalog version mismatch");
+          assert.equal(server.version, releaseVersion, "server.json version mismatch");
+          NODE
+          echo "version=$RELEASE_VERSION" >> "$GITHUB_OUTPUT"
+          echo "tag=v$RELEASE_VERSION" >> "$GITHUB_OUTPUT"
+      - name: Require protected publication environment
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          reviewers="$(gh api "repos/$GITHUB_REPOSITORY/environments/mcp-registry-publish" --jq '[.protection_rules[]? | select(.type == "required_reviewers") | .reviewers[]?] | length')"
+          test "$reviewers" -gt 0
+      - run: npm ci
+      - run: npm test
+      - run: npm run check
+      - run: npm run check:live
+      - name: Validate Registry manifest with pinned publisher
+        run: |
+          set -euo pipefail
+          curl --fail --location --retry 3 --output mcp-publisher.tar.gz \
+            "https://github.com/modelcontextprotocol/registry/releases/download/v${MCP_PUBLISHER_VERSION}/mcp-publisher_linux_amd64.tar.gz"
+          echo "${MCP_PUBLISHER_SHA256}  mcp-publisher.tar.gz" | sha256sum -c -
+          tar -xzf mcp-publisher.tar.gz mcp-publisher
+          chmod +x mcp-publisher
+          ./mcp-publisher validate
+      - run: node scripts/check-registry.mjs --allow-absent
+
+  approval:
+    needs: validate
+    runs-on: ubuntu-latest
+    permissions: {}
+    environment:
+      name: mcp-registry-publish
+    steps:
+      - run: echo "Registry publication approved"
+
+  draft-release:
+    needs: [validate, approval]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+      - name: Create or verify draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ needs.validate.outputs.tag }}
+        run: |
+          set -euo pipefail
+          verify_tag() {
+            git fetch --force origin "refs/tags/$TAG:refs/tags/$TAG"
+            test "$(git rev-list -n 1 "$TAG")" = "$GITHUB_SHA"
+          }
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            verify_tag
+            if test "$(gh release view "$TAG" --json isDraft --jq .isDraft)" != "true"; then
+              node scripts/check-registry.mjs
+            fi
+          elif git ls-remote --exit-code --tags origin "refs/tags/$TAG" >/dev/null 2>&1; then
+            verify_tag
+            gh release create "$TAG" --draft --verify-tag --generate-notes --title "Resistance Tools MCP $TAG"
+          else
+            gh release create "$TAG" --draft --target "$GITHUB_SHA" --generate-notes --title "Resistance Tools MCP $TAG"
+          fi
+
+  registry-publish:
+    needs: [validate, draft-release]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Publish once to the MCP Registry
+        run: |
+          set -euo pipefail
+          set +e
+          node scripts/check-registry.mjs
+          registry_status=$?
+          set -e
+          case "$registry_status" in
+            0)
+              echo "Exact Registry version already exists; skipping publication"
+              ;;
+            2)
+              curl --fail --location --retry 3 --output mcp-publisher.tar.gz \
+                "https://github.com/modelcontextprotocol/registry/releases/download/v${MCP_PUBLISHER_VERSION}/mcp-publisher_linux_amd64.tar.gz"
+              echo "${MCP_PUBLISHER_SHA256}  mcp-publisher.tar.gz" | sha256sum -c -
+              tar -xzf mcp-publisher.tar.gz mcp-publisher
+              chmod +x mcp-publisher
+              ./mcp-publisher login github-oidc
+              ./mcp-publisher publish
+              ;;
+            *)
+              exit "$registry_status"
+              ;;
+          esac
+          node scripts/check-registry.mjs --wait
+
+  finalize-release:
+    needs: [validate, registry-publish]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Publish the verified GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ needs.validate.outputs.tag }}
+        run: gh release edit "$TAG" --draft=false

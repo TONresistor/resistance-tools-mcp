@@ -1,0 +1,18 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.TONresistor/resistance-tools-mcp",
+  "title": "Resistance Tools",
+  "description": "MCP tools for TON Sites, TON DNS and TON Storage.",
+  "version": "0.2.0",
+  "repository": {
+    "url": "https://github.com/TONresistor/resistance-tools-mcp",
+    "source": "github"
+  },
+  "websiteUrl": "https://github.com/TONresistor/resistance-tools-mcp#readme",
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://app.resistance.dog/api/mcp"
+    }
+  ]
+}
