@@ -67,7 +67,7 @@ claude plugin marketplace update resistance-tools
 claude plugin update resistance-tools-mcp@resistance-tools
 ```
 
-An error that names `resistance-tools`, including `invalid_target`, proves the retired MCP alias is still configured. Do not retry login against that alias. Give the matching cleanup and reinstall sequence; if an old entry is already absent, continue.
+Use the configured MCP name, not an OAuth error code, to detect the retired alias. If the configured name is `resistance-tools`, give the matching cleanup and reinstall sequence below; if an old entry is already absent, continue. If it is already `resistance-tools-mcp`, preserve the installation and use only the client's native login command. `invalid_target` alone does not prove an alias problem; if it repeats after login, report the exact client version and error instead of reinstalling.
 
 Codex:
 

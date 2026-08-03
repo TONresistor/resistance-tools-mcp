@@ -236,7 +236,8 @@ assert.match(readme, /claude plugin uninstall resistance-tools@resistance-tools/
 assert.match(readme, /claude plugin uninstall resistance-tools-mcp@resistance-tools/);
 assert.match(readme, /claude plugin marketplace remove resistance-tools/);
 assert.match(readme, /claude mcp add --transport http resistance-tools-mcp/);
-assert.match(readme, /invalid_target/);
+assert.match(readme, /`invalid_target` alone does not/i);
+assert.doesNotMatch(readme, /repair `invalid_target`/i);
 assert.match(readme, /tools only; they do not install the bundled skills/i);
 assert.match(readme, /`main` is the stable branch used for installation and releases\. Development happens on `dev`\./);
 assert.match(skill, /codex mcp add resistance-tools-mcp --url https:\/\/app\.resistance\.dog\/api\/mcp/);
@@ -245,7 +246,8 @@ assert.match(skill, /claude plugin marketplace add TONresistor\/resistance-tools
 assert.match(skill, /codex plugin marketplace upgrade resistance-tools/);
 assert.match(skill, /claude plugin marketplace update resistance-tools/);
 assert.match(skill, /claude plugin update resistance-tools-mcp@resistance-tools/);
-assert.match(skill, /invalid_target/);
+assert.match(skill, /`invalid_target` alone does not/i);
+assert.doesNotMatch(skill, /including `invalid_target`, proves/i);
 assert.match(skill, /codex mcp logout resistance-tools/);
 assert.match(skill, /codex mcp remove resistance-tools/);
 assert.match(skill, /codex mcp logout resistance-tools-mcp/);

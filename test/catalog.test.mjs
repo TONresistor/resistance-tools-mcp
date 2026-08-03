@@ -16,7 +16,7 @@ test("repository packages the current remote MCP for Codex and Claude Code", asy
   const mcp = await readJson(".mcp.json");
 
   assert.equal(pkg.private, true);
-  assert.equal(pkg.version, "0.2.3");
+  assert.equal(pkg.version, "0.2.4");
   assert.equal(catalog.serverVersion, pkg.version);
   assert.equal(registry.version, pkg.version);
   assert.equal(codexPlugin.version, pkg.version);
@@ -65,8 +65,10 @@ test("plugin exposes one Agent Skill with five bundled references", async () => 
     assert.ok(readme.includes(command), `README missing migration command: ${command}`);
     assert.ok(skill.includes(command), `SKILL.md missing migration command: ${command}`);
   }
-  assert.match(readme, /invalid_target/);
-  assert.match(skill, /invalid_target/);
+  assert.match(readme, /`invalid_target` alone does not/i);
+  assert.match(skill, /`invalid_target` alone does not/i);
+  assert.doesNotMatch(readme, /repair `invalid_target`/i);
+  assert.doesNotMatch(skill, /including `invalid_target`, proves/i);
   for (const command of [
     "claude plugin marketplace add TONresistor/resistance-tools-mcp@main",
     "claude plugin install resistance-tools-mcp@resistance-tools",

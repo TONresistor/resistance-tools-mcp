@@ -1,6 +1,6 @@
 {
   "name": "resistance-tools-mcp",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "description": "Operate Resistance Tools for TON Sites, DNS, Subdomains, Storage, wallet access, and wallet-confirmed transactions.",
   "author": {
     "name": "Digital Resistance",

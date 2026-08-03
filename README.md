@@ -45,9 +45,9 @@ claude mcp login resistance-tools-mcp
 
 The user selects permissions on the wallet approval page.
 
-### Replace 0.2.2 or earlier, or repair `invalid_target`
+### Replace 0.2.2 or earlier, or remove the retired MCP alias
 
-Use this migration if an earlier Resistance Tools version was installed, if the marketplace already exists from another source, or if an MCP startup error still names `resistance-tools`. It resets both old and partially installed current entries before installing the current names. If an entry is already absent, continue with the remaining commands.
+Use this migration if an earlier Resistance Tools version was installed, if the marketplace already exists from another source, or if the configured MCP name is still `resistance-tools`. The name proves that the retired local entry exists; `invalid_target` alone does not. If the configured MCP is already `resistance-tools-mcp`, preserve it and use only the client's native login command. If an entry is already absent during migration, continue with the remaining commands.
 
 Codex:
 
