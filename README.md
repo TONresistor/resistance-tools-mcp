@@ -45,9 +45,21 @@ claude mcp login resistance-tools-mcp
 
 The user selects permissions on the wallet approval page.
 
+### OAuth lifetime and recovery
+
+Access tokens last 15 minutes and refresh automatically. Refresh tokens and consent
+last 30 days by default, or 24 hours when any sensitive permission is approved.
+Do not reconnect or reinstall for a normal access-token expiry.
+
+The live server accepts a missing OAuth `resource` on refresh for compatibility with
+Codex stable, while still binding the new token to the canonical MCP resource. If a
+running client retained the old `invalid_target` startup failure, restart it first.
+Run `codex mcp login resistance-tools-mcp` only for `invalid_grant`, an explicit
+authorization request, revoked/expired consent, or missing credentials.
+
 ### Replace 0.2.2 or earlier, or remove the retired MCP alias
 
-Use this migration if an earlier Resistance Tools version was installed, if the marketplace already exists from another source, or if the configured MCP name is still `resistance-tools`. The name proves that the retired local entry exists; `invalid_target` alone does not. If the configured MCP is already `resistance-tools-mcp`, preserve it and use only the client's native login command. If an entry is already absent during migration, continue with the remaining commands.
+Use this migration if an earlier Resistance Tools version was installed, if the marketplace already exists from another source, or if the configured MCP name is still `resistance-tools`. The name proves that the retired local entry exists; `invalid_target` alone does not. If the configured MCP is already `resistance-tools-mcp`, preserve it. If an entry is already absent during migration, continue with the remaining commands.
 
 Codex:
 
@@ -87,7 +99,6 @@ Codex:
 codex plugin marketplace upgrade resistance-tools
 codex plugin remove resistance-tools-mcp@resistance-tools
 codex plugin add resistance-tools-mcp@resistance-tools
-codex mcp login resistance-tools-mcp
 ```
 
 Claude Code:

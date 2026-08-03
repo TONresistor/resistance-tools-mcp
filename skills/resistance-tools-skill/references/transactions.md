@@ -1,6 +1,6 @@
 # Wallet-confirmed transactions
 
-Every tool in this file requires `transactions:request` and returns a short-lived HTTPS confirmation page. Use the runtime schema as canonical. A successful tool call proves preparation only; the named read-back proves the product or indexed result.
+Every tool in this file requires `transactions:request` and returns an HTTPS confirmation page valid for at most five minutes. Use the runtime schema as canonical. A successful tool call proves preparation only; the named read-back proves the product or indexed result.
 
 ## Contents
 
@@ -10,6 +10,8 @@ Every tool in this file requires `transactions:request` and returns a short-live
 ## Required sequence and response
 
 Read the fresh state named by the tool, resolve all user-controlled choices, then prepare the request. Require `status: requires_user_confirmation`, an HTTPS `confirmationUrl`, `expiresAt`, and the backend summary/amount when returned. Give the exact link and wait for the user before read-back.
+
+The page uses the site's official TON Connect connection. If the browser already has the expected wallet restored, no second connection is needed; otherwise the user must connect or switch to that wallet. Never replace this flow with custom-data signing, a custom QR code, or a `ton://` signing link.
 
 Before confirmation, return a short `Transaction ready` message with action, target, backend amount when present, labeled exact confirmation link, and expiry. After confirmation, replace it with the verified product state and its useful link or identifier. Never reuse the MCP request `operationId` as a product operation id.
 

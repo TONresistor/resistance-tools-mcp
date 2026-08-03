@@ -24,7 +24,7 @@ Never infer availability from an empty owned list, call a published site DNS-lin
 - **Permission:** `dns:read`.
 - **Input:** none.
 - **Use:** List `.ton` names owned by the authenticated wallet and their actionable lifecycle state.
-- **Method:** Call only when the user asks to list/select owned domains or a bulk action has no exact names. Do not call it merely to revalidate a supplied domain; transaction tools perform live ownership preflight.
+- **Method:** Call only when the user asks to list/select owned domains or a bulk action has no exact names. Do not call it merely to revalidate a supplied domain; transaction tools perform a fresh indexed ownership preflight.
 - **Verify:** Treat ownership as wallet-scoped and current to the indexed result. A transaction tool still performs live preflight before mutation.
 - **Report:** Give the count and relevant names, including renewal/expiry facts when useful; summarize long lists.
 

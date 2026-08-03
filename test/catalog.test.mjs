@@ -16,7 +16,7 @@ test("repository packages the current remote MCP for Codex and Claude Code", asy
   const mcp = await readJson(".mcp.json");
 
   assert.equal(pkg.private, true);
-  assert.equal(pkg.version, "0.2.4");
+  assert.equal(pkg.version, "0.2.5");
   assert.equal(catalog.serverVersion, pkg.version);
   assert.equal(registry.version, pkg.version);
   assert.equal(codexPlugin.version, pkg.version);

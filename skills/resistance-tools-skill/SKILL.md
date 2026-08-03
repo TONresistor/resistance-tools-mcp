@@ -47,7 +47,7 @@ claude mcp add --transport http resistance-tools-mcp https://app.resistance.dog/
 claude mcp login resistance-tools-mcp
 ```
 
-If the MCP is already registered, do not add it again. Use only the client's native login flow. Let the user select permissions or use `Approve all` on the approval page; never choose permissions for them. Never request a seed phrase, private key, proof, signature, bearer token, or wallet export.
+If the MCP is already registered, do not add it again. Let the user select permissions or use `Approve all` on the approval page; never choose permissions for them. Never request a seed phrase, private key, proof, signature, bearer token, or wallet export.
 
 For a normal update from version 0.2.3 or later, preserve the current marketplace identity and use the matching sequence.
 
@@ -57,7 +57,6 @@ Codex:
 codex plugin marketplace upgrade resistance-tools
 codex plugin remove resistance-tools-mcp@resistance-tools
 codex plugin add resistance-tools-mcp@resistance-tools
-codex mcp login resistance-tools-mcp
 ```
 
 Claude Code:
@@ -67,7 +66,7 @@ claude plugin marketplace update resistance-tools
 claude plugin update resistance-tools-mcp@resistance-tools
 ```
 
-Use the configured MCP name, not an OAuth error code, to detect the retired alias. If the configured name is `resistance-tools`, give the matching cleanup and reinstall sequence below; if an old entry is already absent, continue. If it is already `resistance-tools-mcp`, preserve the installation and use only the client's native login command. `invalid_target` alone does not prove an alias problem; if it repeats after login, report the exact client version and error instead of reinstalling.
+Use the configured MCP name, not an OAuth error code, to detect the retired alias. If the configured name is `resistance-tools`, give the matching cleanup and reinstall sequence below; if an old entry is already absent, continue. If it is already `resistance-tools-mcp`, preserve the installation. A normal access-token expiry refreshes automatically. `invalid_target` alone does not prove an alias problem. On an auth failure, load `references/wallet.md`; never reinstall or re-login from that error alone.
 
 Codex:
 

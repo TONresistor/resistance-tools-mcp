@@ -10,6 +10,14 @@ On `insufficient_scope`, let the user reopen the client's native approval flow a
 
 Revoke only after explicit intent: list access, resolve the exact consent/client, send matching confirmation ids, then list access again. Report authentication, relevant identity/access state, or audit result briefly without tokens or full addresses by default.
 
+## OAuth lifecycle and recovery
+
+- Access tokens last 15 minutes and refresh automatically. Never ask for a new login solely because an access token expired.
+- Refresh tokens and consent last 30 days by default, or 24 hours when any sensitive permission is present.
+- The server accepts an omitted `resource` on refresh and still binds the new token to `https://app.resistance.dog/api/mcp`; an explicit different resource remains invalid.
+- For a cached MCP startup failure, restart the client and call `auth.status`. Use `codex mcp login resistance-tools-mcp` only for `invalid_grant`, an explicit authorization challenge, revoked/expired consent, or missing credentials.
+- Diagnose the retired alias from the configured MCP name, never from `invalid_target`. Preserve an installation already named `resistance-tools-mcp`.
+
 ### `auth.status`
 
 - **Permission:** public.
