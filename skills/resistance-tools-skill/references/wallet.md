@@ -15,6 +15,7 @@ Revoke only after explicit intent: list access, resolve the exact consent/client
 - Access tokens last 15 minutes and refresh automatically. Never ask for a new login solely because an access token expired.
 - Refresh tokens and consent last 30 days by default, or 24 hours when any sensitive permission is present.
 - The server accepts an omitted `resource` on refresh and still binds the new token to `https://app.resistance.dog/api/mcp`; an explicit different resource remains invalid.
+- Concurrent Codex processes may share OAuth credentials. The server gives each process a valid refresh branch; one stale process must not revoke another process's active branch.
 - For a cached MCP startup failure, restart the client and call `auth.status`. If the MCP still cannot start, do not pretend that tool call ran: use `codex mcp get resistance-tools-mcp --json` and `codex --version` to verify the exact name, canonical URL/resource, and client version, then report the unchanged error without dumping credentials. Use `codex mcp login resistance-tools-mcp` only for `invalid_grant`, an explicit authorization challenge, revoked/expired consent, or missing credentials.
 - Diagnose the retired alias from the configured MCP name, never from `invalid_target`. Preserve an installation already named `resistance-tools-mcp`.
 

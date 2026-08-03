@@ -52,10 +52,11 @@ last 30 days by default, or 24 hours when any sensitive permission is approved.
 Do not reconnect or reinstall for a normal access-token expiry.
 
 The live server accepts a missing OAuth `resource` on refresh for compatibility with
-Codex stable, while still binding the new token to the canonical MCP resource. If a
-running client retained the old `invalid_target` startup failure, restart it first.
-Run `codex mcp login resistance-tools-mcp` only for `invalid_grant`, an explicit
-authorization request, revoked/expired consent, or missing credentials.
+Codex stable, while still binding the new token to the canonical MCP resource. It also
+tolerates concurrent refreshes from Codex processes sharing credentials without one
+process revoking the others. Run `codex mcp login resistance-tools-mcp` only for
+`invalid_grant`, an explicit authorization request, revoked/expired consent, or
+missing credentials.
 
 ### Replace 0.2.2 or earlier, or remove the retired MCP alias
 
