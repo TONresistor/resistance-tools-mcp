@@ -30,9 +30,9 @@ Expires: <expiresAt>
 - **Permission:** `transactions:request`.
 - **Input:** exact published `site`.
 - **Use:** Link an already published site to its owned TON DNS target.
-- **Method:** If publication was not just verified, confirm the exact site with `sites.list_releases`; inspect its exact link state with `domains.records`; then prepare the request. Never enumerate all sites for a named target.
+- **Method:** Always inspect the exact link state with `domains.records` immediately before preparing the request. If publication was not just verified, confirm the exact site with `sites.list_releases` too. Never enumerate all sites for a named target.
 - **Verify:** After user confirmation, call `domains.records` for the exact target and require the expected record plus `linkedHere: true`.
-- **Report:** Before confirmation show site, backend amount when returned, expiry, and exact link. After read-back include the verified gateway/TON Site link.
+- **Report:** Before confirmation show site, backend amount when returned, expiry, and exact link. After read-back include the verified gateway/TON Site link. If ownership prevents linking, say the deployment remains published but only the wallet that currently owns the target can prepare the DNS transaction.
 
 ### `payments.send_tx`
 

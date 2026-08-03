@@ -11,7 +11,7 @@ Use the runtime schema as canonical. Supported targets are `name.ton`, `child.na
 ## Workflow and state rules
 
 1. Use `sites.list` only when the user needs discovery or selection. When the user supplies an exact site, use exact-site reads instead of enumerating every site.
-2. Read `sites.get_content` before editing an existing template. Use `sites.publish_files` for an explicit file tree or `sites.publish_template` for structured content. Upload template images first.
+2. Before publishing to an exact target, call `sites.list_releases` once to identify an existing deployment; `not_found` means the target is new. Read `sites.get_content` only before editing an existing template. Use `sites.publish_files` for an explicit file tree or `sites.publish_template` for structured content. Upload template images first.
 3. After publish or rollback, call `sites.list_releases` for the exact site and require the intended release to be active. Read `domains.records` only when DNS-link state matters.
 4. If publication returns `payment_required`, load `transactions.md`, prepare `payments.send_tx`, wait for confirmation, then retry the original publication tool.
 5. To link DNS, load `transactions.md` for `sites.send_link_tx`, then verify the exact target with `domains.records`.
