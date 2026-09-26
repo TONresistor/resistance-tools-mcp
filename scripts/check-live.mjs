@@ -186,7 +186,7 @@ async function checkSdkContract() {
 
     const policy = await client.callTool({ name: "auth.policy", arguments: {} });
     const content = policy.structuredContent;
-    assert.deepEqual(content?.sitePublishing?.templates, catalog.templates, "live template catalog drift");
+    assert.deepEqual([...(content?.sitePublishing?.templates ?? [])].sort(), [...catalog.templates].sort(), "live template catalog drift");
     assert.deepEqual(content?.sitePublishing?.supportedTargets, catalog.siteTargets, "live site target drift");
     assert.equal(content?.sitePublishing?.mediaUpload?.tool, "media.upload_image");
     assert.equal(content?.sitePublishing?.mediaUpload?.scope, "media:write");

@@ -30,6 +30,10 @@ const referenceToolNames = {
   ],
   sites: [
     "sites.list",
+    "sites.list_domains",
+    "sites.preflight_domain",
+    "sites.attach_domain",
+    "sites.unlink_domain",
     "sites.get_content",
     "sites.list_releases",
     "media.upload_image",
@@ -42,6 +46,7 @@ const referenceToolNames = {
   domains: [
     "dns.lookup",
     "domains.list",
+    "domains.list_usernames",
     "domains.records",
     "subdomains.list_collections",
     "subdomains.list_items",
@@ -63,10 +68,10 @@ const referenceToolNames = {
   ],
   transactions: [
     "sites.send_link_tx",
-    "payments.send_tx",
     "dns.send_record_tx",
     "dns.send_name_tx",
     "dns.send_renew_tx",
+    "dns.send_transfer_tx",
     "subdomains.create_collection_tx",
     "subdomains.mint_tx",
     "subdomains.collection_action_tx",
@@ -113,8 +118,8 @@ assert.equal(catalog.transport, "streamable-http");
 assert.deepEqual(catalog.remoteTools, expectedToolContracts);
 assert.deepEqual(catalog.resources.map(({ uri }) => uri), expectedResources);
 assert.deepEqual(catalog.templates, expectedTemplates);
-assert.equal(catalog.remoteTools.length, 46);
-assert.equal(new Set(catalog.remoteTools.map(({ name }) => name)).size, 46);
+assert.equal(catalog.remoteTools.length, 51);
+assert.equal(new Set(catalog.remoteTools.map(({ name }) => name)).size, 51);
 assert.deepEqual(
   [...new Set(catalog.remoteTools.map(({ scope }) => scope).filter((scope) => scope !== "public"))].sort(),
   [...allScopes].sort(),
@@ -190,8 +195,8 @@ for (const name of referenceNames) {
     }
   }
 }
-assert.equal(documentedMethods.length, 46, "references must document exactly 46 tools");
-assert.equal(new Set(documentedMethods).size, 46, "references contain duplicate tool methods");
+assert.equal(documentedMethods.length, 51, "references must document exactly 51 tools");
+assert.equal(new Set(documentedMethods).size, 51, "references contain duplicate tool methods");
 assert.deepEqual(documentedMethods.sort(), expectedToolContracts.map(({ name }) => name).sort());
 assert.deepEqual(
   [...referenceToolNames.transactions].sort(),
@@ -293,4 +298,4 @@ assert.match(references.get("storage"), /Never pass the transaction request's `o
 assert.match(skill, /Do not add boilerplate explaining that the agent cannot sign/i);
 assert.match(skill, /Let the user select permissions/i);
 
-console.log("1 Agent Skill, 5 focused references, 46 live tools, and cross-client plugin metadata are aligned");
+console.log("1 Agent Skill, 5 focused references, 51 live tools, and cross-client plugin metadata are aligned");

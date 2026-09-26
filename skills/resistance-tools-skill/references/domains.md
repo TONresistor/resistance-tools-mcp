@@ -81,3 +81,12 @@ Never infer availability from an empty owned list, call a published site DNS-lin
 - **Method:** Call immediately before choosing an eligible collection action.
 - **Verify:** Use the returned control flags instead of cached collection discovery data.
 - **Report:** State whether the wallet controls the collection or parent and name the currently available relevant action.
+
+### `domains.list_usernames`
+
+- **Permission:** `dns:read`.
+- **Input:** none.
+- **Use:** List the authenticated wallet's owned Telegram Usernames ending in `.t.me`.
+- **Method:** Use for Username discovery; `domains.list` continues to return only `.ton` names. Preserve full names and domain allowlists.
+- **Verify:** The `domains` result is filtered to the authorized wallet and delegation. Transaction tools revalidate ownership before preparing a mutation.
+- **Report:** Give the relevant full `.t.me` names and count, without conflating them with `.ton` domains.

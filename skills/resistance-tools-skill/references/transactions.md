@@ -34,15 +34,6 @@ Expires: <expiresAt>
 - **Verify:** After user confirmation, call `domains.records` for the exact target and require the expected record plus `linkedHere: true`.
 - **Report:** Before confirmation show site, backend amount when returned, expiry, and exact link. After read-back include the verified gateway/TON Site link. If ownership prevents linking, say the deployment remains published but only the wallet that currently owns the target can prepare the DNS transaction.
 
-### `payments.send_tx`
-
-- **Permission:** `transactions:request`.
-- **Input:** exact blocked product `action`: `deploy`, `publish`, or `media`.
-- **Use:** Pay only after the corresponding product tool returns `payment_required`.
-- **Method:** Map the blocked action exactly, prepare the request, and wait for confirmation.
-- **Verify:** Retry the original product tool after confirmation. Its successful result and normal read-back are the usable payment verification.
-- **Report:** Before confirmation say which product action requires payment, amount when returned, expiry, and link. Report the product action as complete only after retry succeeds.
-
 ### `dns.send_record_tx`
 
 - **Permission:** `transactions:request`.
@@ -132,3 +123,12 @@ Expires: <expiresAt>
 - **Method:** For `pin`, use the exact current `quoteId`; for `top_up`, provide accepted target coverage; for one-provider `stop`, provide its exact key; use `withdraw` only when eligible; set `acknowledgeOtherProviders` only after the user reviews that warning.
 - **Verify:** After confirmation, read `storage.bag_details`. Call `storage.provider_operation` only when a distinct provider-operation UUID is available; never use the MCP request `operationId`.
 - **Report:** Before confirmation show action, full BagID, backend amount, affected providers, expiry, and link. Never say paid storage is active until read-back proves it.
+
+### `dns.send_transfer_tx`
+
+- **Permission:** `transactions:request`.
+- **Input:** Exact root `.ton` or `.t.me` domain and the recipient wallet address as newOwner.
+- **Use:** Transfer ownership of a domain NFT through a user-confirmed wallet transaction.
+- **Method:** Confirm the recipient with the user, then request the backend-validated transaction. Return its HTTPS confirmation URL verbatim. Subdomain NFTs use subdomains.transfer_item_tx instead.
+- **Verify:** A confirmation link or submitted BOC is not proof of ownership transfer. Recheck `.ton` ownership using dns.lookup. For `.t.me`, disappearance from domains.list_usernames is insufficient to prove the recipient; recipient ownership must be verified independently before reporting confirmation.
+- **Report:** Show the full domain, recipient, backend amount, expiry and confirmation link. Report execution only when ownership evidence establishes it.

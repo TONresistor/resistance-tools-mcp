@@ -33,7 +33,7 @@ test("repository packages the current remote MCP for Codex and Claude Code", asy
   assert.equal(codexPlugin.name, "resistance-tools-mcp");
   assert.equal(claudePlugin.name, "resistance-tools-mcp");
   assert.deepEqual(catalog.remoteTools, expectedToolContracts);
-  assert.equal(catalog.remoteTools.length, 46);
+  assert.equal(catalog.remoteTools.length, 51);
 });
 
 test("plugin exposes one Agent Skill with five bundled references", async () => {
@@ -101,7 +101,7 @@ test("the five references cover every remote tool exactly once", async () => {
     }
   }
 
-  assert.equal(methods.length, 46);
-  assert.equal(new Set(methods).size, 46);
+  assert.equal(methods.length, 51);
+  assert.equal(new Set(methods).size, 51);
   assert.deepEqual(methods.sort(), expectedToolContracts.map(({ name }) => name).sort());
 });

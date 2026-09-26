@@ -13,7 +13,7 @@ Use the runtime schema as canonical. Supported targets are `name.ton`, `child.na
 1. Use `sites.list` only when the user needs discovery or selection. When the user supplies an exact site, use exact-site reads instead of enumerating every site.
 2. Before publishing to an exact target, call `sites.list_releases` once to identify an existing deployment; `not_found` means the target is new. Read `sites.get_content` only before editing an existing template. Use `sites.publish_files` for an explicit file tree or `sites.publish_template` for structured content. Upload template images first.
 3. After publish or rollback, call `sites.list_releases` for the exact site and require the intended release to be active. Read `domains.records` only when DNS-link state matters.
-4. If publication returns `payment_required`, load `transactions.md`, prepare `payments.send_tx`, wait for confirmation, then retry the original publication tool.
+4. Publication is free; do not request a publication-fee transaction.
 5. To link DNS, load `transactions.md` for `sites.send_link_tx`, then verify the exact target with `domains.records`.
 
 Treat publication and DNS linking as separate events. Say `live` only when an exact read-back proves `linkedHere: true` or an explicit site status read proves `live`. Root targets have a versioned gateway; child targets use `tonsite://<full-name>` and must not receive an invented HTTPS gateway.
@@ -157,3 +157,39 @@ Optional: `language` (default `en`), exactly three `amounts` (default `5`, `10`,
 - When `theme` is present, require `textColor`, `backgroundColor`, `surfaceColor`, and `accentColor`.
 - Safe link schemes are HTTP, HTTPS, Telegram, TON, and mailto.
 - Preserve unrelated existing fields when editing a template.
+
+### `sites.list_domains`
+
+- **Permission:** `sites:read`.
+- **Input:** A site name or stable site ID.
+- **Use:** Read domains attached to one owned site and their DNS status.
+- **Method:** Use this exact-site read before choosing an attachment to change. Site delegation still applies when using an ID.
+- **Verify:** Only domain-allowlisted names are returned; distinguish local attachment from current DNS linkage.
+- **Report:** Give the relevant domains and their returned status.
+
+### `sites.preflight_domain`
+
+- **Permission:** `sites:read`.
+- **Input:** Exact site and full domain name.
+- **Use:** Check ownership, linkage and conflicts before attaching a domain.
+- **Method:** Keep the returned conflict site ID for the following attach request. Both affected sites must be owned and within the site delegation.
+- **Verify:** This is read-only; it does not change DNS or attach a domain.
+- **Report:** Explain any existing source site and whether moving its last domain would delete it.
+
+### `sites.attach_domain`
+
+- **Permission:** `sites:write`.
+- **Input:** Exact site/domain, matching confirmSite/confirmDomain, and the reviewed expectedConflictSiteId if present.
+- **Use:** Attach a domain whose DNS site record already points to the target site or its BagID.
+- **Method:** Run preflight first. Confirm the exact targets. If the source site will be deleted, additionally require confirmDeleteSourceSiteId and `sites:delete`; do not turn a conflict error into silent deletion.
+- **Verify:** Call sites.list_domains for the target and source after completion. Local attachment and DNS signing are separate operations.
+- **Report:** State which domain was attached and any explicitly confirmed source-site deletion.
+
+### `sites.unlink_domain`
+
+- **Permission:** `sites:write`.
+- **Input:** Exact site/domain and matching confirmSite/confirmDomain; confirmDeleteSite only for an explicitly approved last-domain deletion.
+- **Use:** Detach a domain after its DNS record no longer points at this site, or after it changed owner.
+- **Method:** Read the attachments first. Removing the last domain requires `sites:delete`; deleting a Storage-backed site also requires `storage:delete` and the matching bag delegation. Never infer approval for deletion from a detach request alone.
+- **Verify:** Read sites.list_domains afterward; not_found is expected if the last domain and site were deliberately removed.
+- **Report:** State the detached domain and whether the site was deleted. Do not claim the DNS record was changed by this tool.
