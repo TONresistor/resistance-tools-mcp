@@ -1,92 +1,69 @@
-# Domains and Subdomains
+# DNS names and Subdomains
 
-Use the runtime schema as canonical. Load `transactions.md` for every transaction-producing mutation.
+## Select a read the caller can use
 
-## Workflow and state rules
+| Target | Available evidence |
+|---|---|
+| Root `.ton` | `dns.lookup` for public lifecycle/owner; `domains.records` for owned records |
+| Root `username.t.me` | `domains.list_usernames` for owned discovery; `domains.records` for an exact owned root |
+| Owned child NFT | `subdomains.get_item` by item address; `subdomains.list_items` if the address must be discovered |
+| Controlled collection | `subdomains.get_collection` and `subdomains.control` |
+| Someone else's public collection | No public collection reader. `subdomains.mint_tx` performs its own availability/access preflight when collection, parent and label are supplied |
 
-Use `dns.lookup` for public lifecycle state, `domains.list` only for wallet-wide discovery or selection, and `domains.records` for exact record/link state. When the user supplies a domain, call the exact read directly. After wallet confirmation, repeat the matching read and report only the visible change.
+Keep full names and namespaces: `alice.t.me` is not `alice.t.me.ton`. Domain allowlists match exact names, not parent wildcards. Owned lists are filtered by delegation; absence can also mean a name is outside that delegation.
 
-For Subdomains, page the list tools with the returned cursor, read the exact collection/item, and call `subdomains.control` immediately before management or recovery. Keep collection admin rights, parent rights, item ownership, and public name state separate.
-
-Never infer availability from an empty owned list, call a published site DNS-linked without the record proof, or claim ownership from a confirmation link. Return the exact name, current/verified state, expiry when relevant, and useful address or TON Site link.
+`domains.records` does not read child NFTs. For child record edits, use the owned item's `records` and the category/type returned there. A site-category value may be ADNL or a Storage BagID; preserve its `valueKind` when editing. Load [transactions.md](transactions.md) for writes.
 
 ### `dns.lookup`
 
-- **Permission:** `dns:read`.
-- **Input:** normalized `.ton` `name`.
-- **Use:** Read public lifecycle status, auction state, item address, expiry, and records.
-- **Method:** Call before mint, bid, release, renewal, or any public-status answer.
-- **Verify:** Use the returned current status; never infer availability from an empty owned-domain list.
-- **Report:** Give the exact name, status, expiry/auction fact, and only records relevant to the question.
+**Permission:** `dns:read`.
+
+Input: one root `.ton` name. Read public availability, auction/lifecycle, owner and records. Use before choosing `mint`, `bid` or `release`, and to verify root `.ton` transfer or renewal. It is not a public `.t.me` or child-name resolver. Report the exact state returned; an empty owned list is not availability evidence.
 
 ### `domains.list`
 
-- **Permission:** `dns:read`.
-- **Input:** none.
-- **Use:** List `.ton` names owned by the authenticated wallet and their actionable lifecycle state.
-- **Method:** Call only when the user asks to list/select owned domains or a bulk action has no exact names. Do not call it merely to revalidate a supplied domain; transaction tools perform a fresh indexed ownership preflight.
-- **Verify:** Treat ownership as wallet-scoped and current to the indexed result. A transaction tool still performs live preflight before mutation.
-- **Report:** Give the count and relevant names, including renewal/expiry facts when useful; summarize long lists.
+**Permission:** `dns:read`.
 
-### `domains.records`
-
-- **Permission:** `dns:read`.
-- **Input:** exact owned `domain`.
-- **Use:** Read known records and Resistance Tools link state for an owned domain.
-- **Method:** Call before changing a record and after the user confirms any DNS, site-link, or Bag-link transaction.
-- **Verify:** Require the exact category/value, `linkedHere`, or equivalent state. An existing record may point elsewhere.
-- **Report:** State the relevant record and whether it is linked here. Do not equate publication with DNS linking.
-
-### `subdomains.list_collections`
-
-- **Permission:** `subdomains:read`.
-- **Input:** optional `limit` from 1 to 100 and returned `cursor`.
-- **Use:** List Subdomain collections controlled by the authenticated wallet.
-- **Method:** Page until the exact parent or collection is found or the cursor ends.
-- **Verify:** Use `subdomains.get_collection` or `subdomains.control` for fresh rights before a mutation.
-- **Report:** Give the relevant parent, collection address, mode, and current state; summarize long lists.
-
-### `subdomains.list_items`
-
-- **Permission:** `subdomains:read`.
-- **Input:** optional `limit` from 1 to 100 and returned `cursor`.
-- **Use:** List Subdomain NFT items owned by the authenticated wallet.
-- **Method:** Page using the exact returned cursor and select by full name or item address.
-- **Verify:** Use `subdomains.get_item` before transfer. Absence from one page is not proof of non-ownership.
-- **Report:** Give the relevant full name and item address; summarize long lists.
-
-### `subdomains.get_collection`
-
-- **Permission:** `subdomains:read`.
-- **Input:** exact `collectionAddress`.
-- **Use:** Read one collection and the authenticated wallet's collection or parent rights.
-- **Method:** Call before minting or managing the collection.
-- **Verify:** Require the returned collection and control state. `not_found` can mean the wallet lacks both admin and parent rights.
-- **Report:** State parent, mode, access state, and rights relevant to the requested action.
-
-### `subdomains.get_item`
-
-- **Permission:** `subdomains:read`.
-- **Input:** exact `itemAddress`.
-- **Use:** Read one Subdomain item currently owned by the authenticated wallet.
-- **Method:** Call before transfer or an ownership answer.
-- **Verify:** Require the returned owner/name match. After transfer, disappearance from this wallet is expected and should be reconciled with the list.
-- **Report:** State the full name, item address, and verified current owner context.
-
-### `subdomains.control`
-
-- **Permission:** `subdomains:read`.
-- **Input:** exact `collectionAddress`.
-- **Use:** Read fresh authorization, mode, and parent-return state before management or recovery.
-- **Method:** Call immediately before choosing an eligible collection action.
-- **Verify:** Use the returned control flags instead of cached collection discovery data.
-- **Report:** State whether the wallet controls the collection or parent and name the currently available relevant action.
+List owned root `.ton` names when discovery or a bulk operation is requested. Results are under `domains` and filtered by the domain allowlist. Preserve expiry/releasable facts; an individual supplied name normally needs an exact read rather than a wallet-wide list.
 
 ### `domains.list_usernames`
 
-- **Permission:** `dns:read`.
-- **Input:** none.
-- **Use:** List the authenticated wallet's owned Telegram Usernames ending in `.t.me`.
-- **Method:** Use for Username discovery; `domains.list` continues to return only `.ton` names. Preserve full names and domain allowlists.
-- **Verify:** The `domains` result is filtered to the authorized wallet and delegation. Transaction tools revalidate ownership before preparing a mutation.
-- **Report:** Give the relevant full `.t.me` names and count, without conflating them with `.ton` domains.
+**Permission:** `dns:read`.
+
+List owned Telegram Usernames under `domains`, preserving `.t.me`. This is discovery, not a public username lookup. After transferring a Username, disappearance proves at most that this wallet's visible inventory changed; it does not identify the recipient.
+
+### `domains.records`
+
+**Permission:** `dns:read`.
+
+Input: one owned root `.ton` or `.t.me` `domain`. Read the exact DNS categories, value types and values before editing or linking. Verify the requested category/value after confirmation. The returned `linkedHere` is an ADNL-platform convenience flag: for a Storage-backed site, compare the `site` record's Storage type and exact BagID instead. Do not use this tool for child NFTs or after ownership has moved to another wallet.
+
+### `subdomains.list_collections`
+
+**Permission:** `subdomains:read`.
+
+Discover collections administered by this wallet, with optional `limit` and returned `cursor`. Stop when the requested collection is found; only enumerate all pages for a complete-list request. A parent owner can have rights on a collection absent from this admin list; use an exact `subdomains.control` read when its address is known.
+
+### `subdomains.list_items`
+
+**Permission:** `subdomains:read`.
+
+Page owned NFT items with the returned cursor; match the exact full name or item address. An item absent from one page is not proof of non-ownership. Use this read to discover a newly minted item's address, then inspect it directly. Delegation filtering can shorten a page without ending pagination.
+
+### `subdomains.get_collection`
+
+**Permission:** `subdomains:read`.
+
+Input: exact `collectionAddress`. Returns `{collection, control}` only when the caller is the collection admin or owns its parent. Use for management or known owner/admin inspection. Do not make this restricted read a prerequisite for a public user's mint. `not_found` may be the rights check, even when minting is allowed.
+
+### `subdomains.get_item`
+
+**Permission:** `subdomains:read`.
+
+Input: exact `itemAddress`. Returns an item owned by the authorized wallet, including its name, owner and records. Use before child-record changes and item transfers. After transfer this owner-scoped read may return `not_found`; that alone does not prove delivery to the intended recipient.
+
+### `subdomains.control`
+
+**Permission:** `subdomains:read`.
+
+Input: exact `collectionAddress`. Read fresh control flags, parent rights and recovery state; flags, not a cached admin label, determine eligible management actions. This is not a public collection catalog or a source of mint pricing. Report only the rights and next action relevant to the request.

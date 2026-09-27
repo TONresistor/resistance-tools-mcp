@@ -50,38 +50,6 @@ test("plugin exposes one Agent Skill with five bundled references", async () => 
   assert.match(metadata, /value: "resistance-tools-mcp"/);
   const readme = await read("README.md");
   assert.match(readme, /invoked as `\$resistance-tools-skill`/i);
-  for (const command of [
-    "codex mcp logout resistance-tools",
-    "codex mcp remove resistance-tools",
-    "codex mcp logout resistance-tools-mcp",
-    "codex mcp remove resistance-tools-mcp",
-    "codex plugin remove resistance-tools@resistance-tools",
-    "codex plugin remove resistance-tools-mcp@resistance-tools",
-    "codex plugin marketplace remove resistance-tools",
-    "codex plugin marketplace add TONresistor/resistance-tools-mcp@main",
-    "codex plugin add resistance-tools-mcp@resistance-tools",
-    "codex mcp login resistance-tools-mcp",
-  ]) {
-    assert.ok(readme.includes(command), `README missing migration command: ${command}`);
-    assert.ok(skill.includes(command), `SKILL.md missing migration command: ${command}`);
-  }
-  assert.match(readme, /`invalid_target` alone does not/i);
-  assert.match(skill, /`invalid_target` alone does not/i);
-  assert.doesNotMatch(readme, /repair `invalid_target`/i);
-  assert.doesNotMatch(skill, /including `invalid_target`, proves/i);
-  for (const command of [
-    "claude plugin marketplace add TONresistor/resistance-tools-mcp@main",
-    "claude plugin install resistance-tools-mcp@resistance-tools",
-    "claude mcp login resistance-tools-mcp",
-    "codex plugin marketplace upgrade resistance-tools",
-    "claude plugin marketplace update resistance-tools",
-    "claude plugin update resistance-tools-mcp@resistance-tools",
-  ]) {
-    assert.ok(readme.includes(command), `README missing current command: ${command}`);
-    assert.ok(skill.includes(command), `SKILL.md missing current command: ${command}`);
-  }
-  assert.match(skill, /Do not enumerate the user's wallet, sites, domains, Bags, collections, or items/i);
-  assert.match(skill, /Never create a throwaway project as an intermediate step/i);
   for (const name of referenceNames) {
     assert.ok(skill.includes(`[references/${name}.md](references/${name}.md)`));
   }
@@ -95,13 +63,35 @@ test("the five references cover every remote tool exactly once", async () => {
     for (let index = 0; index < headings.length; index += 1) {
       const section = doc.slice(headings[index].index, headings[index + 1]?.index ?? doc.length);
       methods.push(headings[index][1]);
-      for (const marker of ["**Permission:**", "**Input:**", "**Use:**", "**Method:**", "**Verify:**", "**Report:**"]) {
-        assert.ok(section.includes(marker), `${name}.md ${headings[index][1]} missing ${marker}`);
-      }
+      const contract = expectedToolContracts.find((tool) => tool.name === headings[index][1]);
+      assert.equal(section.match(/\*\*Permission:\*\* `([^`]+)`/u)?.[1], contract?.scope,
+        `${headings[index][1]} scope must match the tool contract`);
     }
   }
 
   assert.equal(methods.length, 51);
   assert.equal(new Set(methods).size, 51);
   assert.deepEqual(methods.sort(), expectedToolContracts.map(({ name }) => name).sort());
+});
+
+test("every local skill reference resolves within the bundled skill", async () => {
+  const skillRoot = new URL("../skills/resistance-tools-skill/", import.meta.url);
+  const documents = ["SKILL.md", ...referenceNames.map((name) => `references/${name}.md`)];
+  const reached = new Set(["SKILL.md"]);
+  const queue = ["SKILL.md"];
+  while (queue.length) {
+    const relative = queue.shift();
+    const url = new URL(relative, skillRoot);
+    const text = await readFile(url, "utf8");
+    for (const match of text.matchAll(/\[[^\]]+\]\(([^)]+)\)/gu)) {
+      const target = match[1];
+      if (/^[a-z][a-z0-9+.-]*:/iu.test(target) || target.startsWith("#")) continue;
+      const resolved = new URL(target, url);
+      assert.ok(resolved.href.startsWith(skillRoot.href), `reference escapes bundled skill: ${target}`);
+      await readFile(resolved, "utf8");
+      const child = resolved.href.slice(skillRoot.href.length);
+      if (!reached.has(child)) { reached.add(child); queue.push(child); }
+    }
+  }
+  assert.deepEqual([...reached].sort(), documents.sort());
 });

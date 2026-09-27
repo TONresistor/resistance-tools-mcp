@@ -1,95 +1,75 @@
-# Wallet, access, and audit
+# Connection, identity, access and audit
 
-Use the live runtime schema when it differs from this bundled reference. Never expose secrets, token material, or unredacted internal payloads.
+## Connection and recovery
 
-## Workflow and response rules
+Canonical endpoint: `https://app.resistance.dog/api/mcp`, remote Streamable HTTP with native OAuth. Marketplace: `resistance-tools`; plugin/server: `resistance-tools-mcp`. Use the current client's native connection flow. For Codex login, `codex mcp login resistance-tools-mcp`; for Claude Code, `claude mcp login resistance-tools-mcp`. The user chooses permissions. Do not request wallet keys, proofs, bearer tokens or credential exports.
 
-Call `auth.status` only to troubleshoot authentication. Use `wallet.me` only when the user asks about identity/delegation or owner versus actor is genuinely ambiguous; normal protected tools already enforce the wallet boundary. Use access or audit tools only for an explicit access-management or audit task.
+Installation, ordinary Git-marketplace updates and legacy-alias migration belong in the [repository README](https://github.com/TONresistor/resistance-tools-mcp#readme). Consult that only when setup is the task. Do not reinstall a working plugin for a server-side ownership or permission failure.
 
-On `insufficient_scope`, let the user reopen the client's native approval flow and select permissions; do not choose them. If Codex login is required, give only `codex mcp login resistance-tools-mcp`.
+Access tokens normally refresh automatically. Current server policy is 15-minute access tokens and 30-day refresh/consent, shortened to 24 hours for sensitive grants; `auth.policy` is authoritative if that changes. Concurrent refresh branches are supported. An absent refresh `resource` is tolerated; an explicit different audience is not.
 
-Revoke only after explicit intent: list access, resolve the exact consent/client, send matching confirmation ids, then list access again. Report authentication, relevant identity/access state, or audit result briefly without tokens or full addresses by default.
+| Evidence | Next action |
+|---|---|
+| Missing credentials, expired/revoked consent or `invalid_grant` | Native login/reauthorization for this server |
+| `insufficient_scope` | Show the exact required scope and let the user decide whether to add it |
+| Target outside an allowlist | Explain the exact denied target; do not broaden the delegation yourself |
+| Ownership denial / `not_found` | Check the reader's ownership boundary and the target, not plugin installation |
+| `invalid_target` | Check canonical URL/resource; this error alone does not prove an old alias |
+| Configured server actually named `resistance-tools` | Consult the README's retired-alias migration |
+| MCP startup fails before tools are callable | Report startup as failed; do not claim `auth.status` ran. Inspect only relevant client/config metadata |
 
-## OAuth lifecycle and recovery
-
-- Access tokens last 15 minutes and refresh automatically. Never ask for a new login solely because an access token expired.
-- Refresh tokens and consent last 30 days by default, or 24 hours when any sensitive permission is present.
-- The server accepts an omitted `resource` on refresh and still binds the new token to `https://app.resistance.dog/api/mcp`; an explicit different resource remains invalid.
-- Concurrent Codex processes may share OAuth credentials. The server gives each process a valid refresh branch; one stale process must not revoke another process's active branch.
-- For a cached MCP startup failure, restart the client and call `auth.status`. If the MCP still cannot start, do not pretend that tool call ran: use `codex mcp get resistance-tools-mcp --json` and `codex --version` to verify the exact name, canonical URL/resource, and client version, then report the unchanged error without dumping credentials. Use `codex mcp login resistance-tools-mcp` only for `invalid_grant`, an explicit authorization challenge, revoked/expired consent, or missing credentials.
-- Diagnose the retired alias from the configured MCP name, never from `invalid_target`. Preserve an installation already named `resistance-tools-mcp`.
+A granted scope is capability, not user authorization for every action it enables. Preserve already authorized work; do not ask for permission again merely because it uses a write tool. Keep destructive confirmations tied to the exact requested resource/effect.
 
 ### `auth.status`
 
-- **Permission:** public.
-- **Input:** none.
-- **Use:** Diagnose whether the current MCP session is authenticated.
-- **Method:** Call before troubleshooting a protected tool. Read the boolean `authenticated`; a session identifier alone is not authentication.
-- **Verify:** This read is the session evidence. Do not infer login from `codex mcp list` or from the server being configured.
-- **Report:** Say authenticated or not authenticated. For an unauthenticated Codex session, give only `codex mcp login resistance-tools-mcp`.
+**Permission:** `public`.
+
+Use for authentication diagnosis. Read `authenticated`; a configured endpoint or transport session ID is not evidence of authentication. When authenticated, the response includes owner/actor, client, scopes and expiry, not credential material. Do not call this as a ritual before every product operation.
 
 ### `auth.policy`
 
-- **Permission:** public.
-- **Input:** none.
-- **Use:** Resolve uncertainty about OAuth, permissions, safety controls, limits, retention, templates, or supported targets.
-- **Method:** Call once and select only the policy fields relevant to the question.
-- **Verify:** Treat the live result as newer than bundled prose about mutable server policy.
-- **Report:** State the applicable rule briefly; never dump the complete policy by default.
+**Permission:** `public`.
+
+Use when a current server rule is genuinely needed: supported targets/templates, scopes, limits, confirmations or OAuth policy. Select relevant fields, not the entire JSON. This describes policy, not the particular user's active allowlists.
 
 ### `wallet.me`
 
-- **Permission:** `wallet:read`.
-- **Input:** none.
-- **Use:** Confirm the effective owner, optional actor, client, resource, and allowlists before owner-sensitive work.
-- **Method:** Call when identity, delegation, or exact target access could be ambiguous. Use `ownerWallet` as the data boundary and `actorWallet` only as the delegated caller.
-- **Verify:** Match the requested target against the returned owner/delegation context and allowlists. Do not replace owner identity with actor identity.
-- **Report:** Describe owner versus delegated actor and abbreviate addresses unless the full address is required.
+**Permission:** `wallet:read`.
+
+Use when owner versus delegated actor or effective granted scopes are unclear. The result includes `ownerWallet`, `actorWallet`, `clientId`, `scopes`, `resource` and `grantId`. It does not expose site/domain/Bag allowlist arrays; do not claim to have checked them from this response. Product tools enforce those limits. Owner is the data/signing boundary; actor identifies a delegated caller.
 
 ### `mcp.access.list`
 
-- **Permission:** `mcp:read`.
-- **Input:** none.
-- **Use:** Inspect current consents and redacted active sessions.
-- **Method:** Call before revocation or when the user asks which clients retain access.
-- **Verify:** Compare consent id, client, actor, expiry, revoked state, and active sessions. An old audit event does not prove current access.
-- **Report:** Give the relevant client, consent state, expiry, and session count; summarize large lists.
+**Permission:** `mcp:read`.
+
+For an access-management request, list consents and redacted active sessions. Match the exact client/consent/actor, expiry and revoked state before selecting a revocation. An audit event or an installed plugin does not prove a currently valid grant.
 
 ### `mcp.audit.list`
 
-- **Permission:** `mcp:read`.
-- **Input:** optional `limit` from 1 to 100, `method`, `resultStatus`, and ISO-8601 `since`.
-- **Use:** Investigate specific recent MCP actions or failures.
-- **Method:** Apply the narrowest useful filters and smallest useful limit. Use the exact runtime method name.
-- **Verify:** Treat returned events as redacted MCP execution evidence, not proof that an external chain transaction finalized.
-- **Report:** State the filters/time window, matching count, and relevant result. Say explicitly when no matching event exists.
+**Permission:** `mcp:read`.
+
+Filter by exact method, result status, ISO `since`, and a proportionate limit within the runtime schema. Events are MCP execution evidence, not blockchain finality. Report the requested window, relevant events/errors and explicit absence of matching evidence; do not expose internal fingerprints as identities.
 
 ### `mcp.audit.summary`
 
-- **Permission:** `mcp:read`.
-- **Input:** optional `windowHours` from 1 to 720 and `topMethodsLimit` from 1 to 50.
-- **Use:** Get aggregate activity, success/error totals, and top methods over a period.
-- **Method:** Choose a window proportional to the question. Use `mcp.audit.list` when the user needs one concrete call.
-- **Verify:** Aggregates prove only counts for the returned window, not the outcome of a particular action.
-- **Report:** Give the window and key totals; do not present the summary as a per-call trace.
+**Permission:** `mcp:read`.
+
+Use a requested/proportionate `windowHours` and `topMethodsLimit` for aggregate counts. For a specific call, use the filtered event list instead. Success totals are not proof of one external outcome.
 
 ### `mcp.access.revoke_consent`
 
-- **Permission:** `mcp:revoke`.
-- **Input:** `consentId` and an identical `confirmConsentId`.
-- **Use:** Revoke one consent and its matching tokens after an explicit user request.
-- **Method:** Call `mcp.access.list`, resolve the exact consent/client, obtain explicit intent, then send the identical ids.
-- **Verify:** Call `mcp.access.list` again and require the consent to be revoked or its matching sessions to be inactive.
-- **Report:** State which client/consent was revoked and that matching sessions were invalidated. Never reveal token material.
+**Permission:** `mcp:revoke`.
+
+Resolve the exact consent through `access.list`, then pass identical `consentId` and `confirmConsentId` when the user has authorized revoking it. This invalidates its matching tokens and may revoke the current caller. Re-read access if still authorized; if access is lost as expected, report the successful revocation response and that the follow-up read is unavailable instead of forcing a fresh login just to undo that effect.
 
 ## Fixed resources
 
-Use these only for a convenient read-only snapshot when the client supports MCP resources:
+Resources are optional convenience snapshots; tools are more suitable for filtered or exact-target follow-up:
 
-- `tonsite://wallet` — owner and actor context.
-- `tonsite://sites` — owned sites.
-- `tonsite://deployments` — deployment history.
-- `tonsite://domains` — owned domains.
-- `tonsite://bags` — owned Bags.
-
-Prefer the corresponding tool when filters, fresh verification, or a follow-up mutation is required.
+| URI | Scope | Data boundary |
+|---|---|---|
+| `tonsite://wallet` | `wallet:read` | Owner/actor context, same limitations as wallet.me |
+| `tonsite://sites` | `sites:read` | Owned and site-allowlisted sites |
+| `tonsite://deployments` | `deployments:read` | Site-allowlisted deployment history |
+| `tonsite://domains` | `dns:read` | Owned `.ton` roots only; Usernames use domains.list_usernames |
+| `tonsite://bags` | `storage:read` | Owned and Bag-allowlisted Bags |

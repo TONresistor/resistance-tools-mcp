@@ -1,134 +1,44 @@
 ---
 name: resistance-tools-skill
-description: Operate the complete Resistance Tools MCP for TON Sites, TON DNS, Subdomains, TON Storage, wallet access, audit, permissions, paid providers, and manually confirmed transactions. Use whenever an agent must select or sequence Resistance Tools tools, validate the resulting state, recover from an MCP error, or return the correct concise links and identifiers to the user.
+description: Use the Resistance Tools MCP to publish and manage TON Sites, owned DNS names and Subdomains, TON Storage, wallet-confirmed transactions, and MCP access. Use for these product operations, not general TON development or unrelated wallet administration.
 ---
 
 # Resistance Tools
 
-Use the hosted `resistance-tools-mcp` MCP and treat its runtime tool schema and structured results as canonical. Complete the requested workflow, verify the resulting state, and give the user the useful outcome instead of raw tool output.
+Operate the hosted `resistance-tools-mcp` server. Its current tool schemas and structured results are the authority for inputs and outcomes. The plugin/source is `resistance-tools-mcp@resistance-tools`; this skill is `$resistance-tools-skill`.
 
-## Connection and permissions
+## Choose the reference
 
-Keep these identifiers distinct:
+Load only what the request needs; combine references for an actual cross-product operation.
 
-- Marketplace/source: `resistance-tools`
-- Plugin and MCP server: `resistance-tools-mcp`
-- Skill: `resistance-tools-skill`
+- [references/sites.md](references/sites.md): publication, templates, images, releases, attached domains, deletion and site links.
+- [references/domains.md](references/domains.md): `.ton`, Telegram Usernames, owned Subdomain items, collection rights and exact-record reads.
+- [references/storage.md](references/storage.md): free Bags, paid providers, funding choices, state verification and cleanup.
+- [references/transactions.md](references/transactions.md): every `transactions:request` tool, wallet confirmation, uncertain outcomes and action-specific read-back.
+- [references/wallet.md](references/wallet.md): connection problems, scopes, owner/actor context, audit, access and resources.
 
-For a fresh Codex plugin install:
+## Work within the request
 
-```bash
-codex plugin marketplace add TONresistor/resistance-tools-mcp@main
-codex plugin add resistance-tools-mcp@resistance-tools
-codex mcp login resistance-tools-mcp
-```
+Use the supplied name, BagID, site ID or contract address directly. List for discovery, selection, requested bulk work, or when no exact-target read exists. Do not enumerate unrelated wallet contents. `auth.status` is for authentication diagnosis; `wallet.me` is useful when identity or delegation is actually unclear.
 
-For a fresh Claude Code plugin install:
+Keep an existing authorization to perform the requested operation. Ask only for missing consequential choices or an additional effect the user has not authorized, such as deleting a source site while moving its last domain. Tool permissions do not establish user intent, and user intent does not bypass missing permissions.
 
-```bash
-claude plugin marketplace add TONresistor/resistance-tools-mcp@main
-claude plugin install resistance-tools-mcp@resistance-tools
-claude mcp login resistance-tools-mcp
-```
+Use existing project files when the user wants reusable source or edits; one-off generated content can be sent directly to a publishing tool. Do not create a disposable project merely to stage a request. Preserve unrelated site content and user files.
 
-For MCP-only setup:
+Follow the runtime schema rather than copying a stale argument list. Reuse exact IDs and values returned by the server. Do not invent a recipient, provider key, price grid or funding amount. A `not_found` response on an owner-scoped read can mean missing rights, not absence on-chain.
 
-Codex:
+## Transactions and retries
 
-```bash
-codex mcp add resistance-tools-mcp --url https://app.resistance.dog/api/mcp
-codex mcp login resistance-tools-mcp
-```
+Transaction tools prepare an HTTPS `confirmationUrl`; they do not sign or broadcast. Show that exact URL as a Markdown link, the action, target, expected recipient when relevant, backend amount and expiry. Wait for the user's wallet confirmation, then perform the read-back in the transaction reference.
 
-Claude Code:
+The returned `operationId` is the internal MCP confirmation request ID, not a Storage provider-operation ID. Do not interchange them or invent a transaction-status tool. An expired link is unusable; if signing may already have happened, first check the resulting state before offering a fresh request. Never automatically resend an uncertain transaction or repeat a destructive mutation after a lost response.
 
-```bash
-claude mcp add --transport http resistance-tools-mcp https://app.resistance.dog/api/mcp
-claude mcp login resistance-tools-mcp
-```
+For delayed indexing, keep the result pending. A useful default is one read-back plus up to two spaced retries over about 15 seconds, then report the last evidence. Continue longer only when the task calls for waiting; do not install monitoring implicitly.
 
-If the MCP is already registered, do not add it again. Let the user select permissions or use `Approve all` on the approval page; never choose permissions for them. Never request a seed phrase, private key, proof, signature, bearer token, or wallet export.
+## Report the useful result
 
-For a normal update from version 0.2.3 or later, preserve the current marketplace identity and use the matching sequence.
+Reply in the user's language with the exact target, verified state, useful link and relevant release/Bag/item ID. Distinguish prepared, awaiting confirmation, submitted, confirmed, published and live. A wallet acknowledgement is not execution proof; a funded provider contract is not active storage.
 
-Codex:
+Do not dump JSON, base64, BoCs, credentials or audit internals. Abbreviate wallet addresses except when the recipient must be reviewed exactly. If a read-back is unavailable, state that specific boundary and the next useful action; do not substitute a successful tool call for verification.
 
-```bash
-codex plugin marketplace upgrade resistance-tools
-codex plugin remove resistance-tools-mcp@resistance-tools
-codex plugin add resistance-tools-mcp@resistance-tools
-```
-
-Claude Code:
-
-```bash
-claude plugin marketplace update resistance-tools
-claude plugin update resistance-tools-mcp@resistance-tools
-```
-
-Use the configured MCP name, not an OAuth error code, to detect the retired alias. If the configured name is `resistance-tools`, give the matching cleanup and reinstall sequence below; if an old entry is already absent, continue. If it is already `resistance-tools-mcp`, preserve the installation. A normal access-token expiry refreshes automatically. `invalid_target` alone does not prove an alias problem. On an auth failure, load `references/wallet.md`; never reinstall or re-login from that error alone.
-
-Codex:
-
-```bash
-codex mcp logout resistance-tools
-codex mcp remove resistance-tools
-codex mcp logout resistance-tools-mcp
-codex mcp remove resistance-tools-mcp
-codex plugin remove resistance-tools@resistance-tools
-codex plugin remove resistance-tools-mcp@resistance-tools
-codex plugin marketplace remove resistance-tools
-codex plugin marketplace add TONresistor/resistance-tools-mcp@main
-codex plugin add resistance-tools-mcp@resistance-tools
-codex mcp login resistance-tools-mcp
-```
-
-Claude Code:
-
-```bash
-claude mcp logout resistance-tools
-claude mcp remove resistance-tools
-claude mcp logout resistance-tools-mcp
-claude mcp remove resistance-tools-mcp
-claude plugin uninstall resistance-tools@resistance-tools
-claude plugin uninstall resistance-tools-mcp@resistance-tools
-claude plugin marketplace remove resistance-tools
-claude plugin marketplace add TONresistor/resistance-tools-mcp@main
-claude plugin install resistance-tools-mcp@resistance-tools
-claude mcp login resistance-tools-mcp
-```
-
-## Method
-
-1. Load only the bundled reference needed for the task before calling its tools.
-2. Use an exact target supplied by the user directly. Do not enumerate the user's wallet, sites, domains, Bags, collections, or items merely to rediscover it.
-3. Read the narrow current state before a mutation. Call a list tool only for discovery, selection, bulk work, or when no exact-target read exists.
-4. Use `auth.status` only for authentication troubleshooting and `wallet.me` only when identity or delegation is requested or genuinely ambiguous.
-5. Match local work to the request: preserve or edit local files when the user wants a project or reusable source; send one-off generated content directly when it exists only to be published. Never create a throwaway project as an intermediate step.
-6. Call the exact tool with the runtime schema, run the narrow named read-back after mutation or wallet confirmation, and report only what those results prove.
-
-## References
-
-- Read [references/sites.md](references/sites.md) for publishing, releases, media, deployments, rollback, deletion, templates, gateway links, and site result formats.
-- Read [references/domains.md](references/domains.md) for TON DNS reads, records, lifecycle, owned domains, Subdomain collections, items, and control state.
-- Read [references/storage.md](references/storage.md) for Bags, provider discovery, funding sessions, exact previews, quotes, provider operations, imports, and deletion.
-- Read [references/wallet.md](references/wallet.md) for authentication, policy, owner/actor identity, permissions, access, audit, revocation, and fixed resources.
-- Read [references/transactions.md](references/transactions.md) before every tool requiring `transactions:request` or whenever a result contains `requires_user_confirmation` or `confirmationUrl`.
-
-Load multiple references only for a real cross-product sequence, such as publishing then linking DNS, or funding Storage then requesting provider confirmation.
-
-## Transaction boundary
-
-Every transaction tool creates a short-lived HTTPS confirmation request. Give its exact `confirmationUrl` to the user and wait. The link means `prepared` or `awaiting confirmation`; it does not mean signed, sent, submitted, confirmed, paid, linked, minted, renewed, or active.
-
-The returned `operationId` identifies the internal MCP confirmation request, not a product-specific operation. Do not report it or pass it to another tool. After the user confirms, run the mapped read-back. Treat an expired link as unusable and create a fresh request after a new preflight. Do not add boilerplate explaining that the agent cannot sign.
-
-## User response
-
-- Reply in the user's language.
-- Keep the normal result to a short title and two to five useful lines.
-- Include the exact target, verified status, useful link, and release, BagID, collection, item, or operation identifier when available.
-- Use a labeled Markdown link and preserve exact URLs as link targets.
-- Never dump raw JSON, logs, payloads, BoCs, token hashes, base64, or full wallet addresses unless requested.
-- Distinguish `prepared`, `awaiting confirmation`, `submitted`, `confirmed`, `published`, and `live`.
-- If verification is unavailable, state that boundary in one sentence and give one concrete next action.
+The MCP does not currently expose Webdom trading, a public `.t.me` recipient-ownership lookup, or a public Subdomain collection browser. Explain those capability limits when they block the requested workflow. Do not work around missing tools with unrelated APIs or additional transactions without the user's scope supporting that work.

@@ -1,195 +1,133 @@
-# Sites, releases, media, deployments, and templates
+# Sites, releases, domains and templates
 
-Use the runtime schema as canonical. Supported targets are `name.ton`, `child.name.ton`, `username.t.me`, and `child.username.t.me`.
+## Publish the requested content
 
-## Contents
+Supported names: root `.ton`, root `username.t.me`, and one supported child under either. Publication is free. Use an exact site read when its identity is supplied; list only for discovery or when the current site name/ID is unknown. `sites.get_content` is needed to preserve fields when editing a template, not to enumerate every unrelated site.
 
-- Workflow and state rules
-- Tool methods
-- Template schemas
+Publish the intended static files or template, then inspect the exact active release. A template publish can return `hosting: storage`, `bagId` and `needsDnsLink`; preserve those fields. Link that Bag with `storage.send_bag_link_tx` when DNS linking is requested. `sites.send_link_tx` instead sets the platform ADNL record and is for ADNL-hosted content. A new local alias additionally requires the attachment workflow below. Never infer on-chain linkage from successful publication.
 
-## Workflow and state rules
+For root DNS read-back use `domains.records`; for an owned child use `subdomains.get_item` (discover its address only if needed). Compare category, value type and exact value. In particular, an ADNL-only `linkedHere` flag does not establish that a Storage BagID is linked.
 
-1. Use `sites.list` only when the user needs discovery or selection. When the user supplies an exact site, use exact-site reads instead of enumerating every site.
-2. Before publishing to an exact target, call `sites.list_releases` once to identify an existing deployment; `not_found` means the target is new. Read `sites.get_content` only before editing an existing template. Use `sites.publish_files` for an explicit file tree or `sites.publish_template` for structured content. Upload template images first.
-3. After publish or rollback, call `sites.list_releases` for the exact site and require the intended release to be active. Read `domains.records` only when DNS-link state matters.
-4. Publication is free; do not request a publication-fee transaction.
-5. To link DNS, load `transactions.md` for `sites.send_link_tx`, then verify the exact target with `domains.records`.
+Return concise useful links. Prefer a URL supplied by the server. The supported root gateways are `https://<name>.ton.run/` and `https://<name>.ton.resistance.dog/` for `.ton`, or `https://<username>.t.me.resistance.dog/` for a Username. Add `?v=<URL-encoded active release id>` when available. Do not invent an HTTPS gateway for a child name: use `tonsite://<full-name>`. A static file deployment is not a dynamic application runtime.
 
-Treat publication and DNS linking as separate events. Say `live` only when an exact read-back proves `linkedHere: true` or an explicit site status read proves `live`. Root targets have a versioned gateway; child targets use `tonsite://<full-name>` and must not receive an invented HTTPS gateway.
+Example fields, selected as relevant: Domain: exact name; Gateway: labeled supported URL; TON Site: native link; Release: returned number/id; Status: published, pending DNS, or verified live.
 
-After verified publication, return domain, labeled versioned gateway when supported, `tonsite://` link, release number/id, and verified link status. For deletion, state that the deployment was deleted and TON DNS was unchanged.
+## Domain attachments
 
-```text
-Site published
+Use `sites.list_domains` → `sites.preflight_domain` → the requested DNS confirmation if needed → `sites.attach_domain`. For removal, clear/change the exact DNS link if within the user's request, then `sites.unlink_domain`. A stale alias that changed owner can be detached locally but does not authorize changing its DNS.
 
-Domain: <site>
-Gateway: <labeled versioned gateway, when supported>
-TON Site: tonsite://<site>
-Release: #<number> (<releaseId>)
-Status: live | published, DNS not linked here
-```
+Keep the stable site IDs from reads when moving names: a moved alias resolves to the new site afterward. Preflight again if a conflict changes. Moving a last alias can delete the source site; removing a last alias can delete the target site and its free Bag reference. Explain that additional effect and obtain intent if the original request did not cover it. Do not treat a permission error or conflict as approval for deletion.
 
 ### `sites.list`
 
-- **Permission:** `sites:read`.
-- **Input:** none.
-- **Use:** Discover owned sites and read template, release, size, file count, and DNS-link status.
-- **Method:** Call only when the user asks to list/select sites or when no exact target is available. Do not call it as a routine preflight or read-back for a named site.
-- **Verify:** Use the returned current row for platform state. An absent row does not by itself prove public DNS state.
-- **Report:** Give the relevant site, active release, and link status; summarize large lists.
+**Permission:** `sites:read`.
+
+Discover owned sites and their current IDs/names, hosting, releases and link states when needed. Use exact-site readers for a supplied target. Cached inventory is not authority for a write; the mutation service revalidates the affected ownership and mappings.
 
 ### `sites.get_content`
 
-- **Permission:** `sites:read`.
-- **Input:** exact `site`.
-- **Use:** Read stored template metadata before editing a template site.
-- **Method:** Call before `sites.publish_template`; preserve fields the user did not ask to change.
-- **Verify:** A `null` template/content may represent a file-based deployment, not a broken site.
-- **Report:** Summarize the current template and requested fields without dumping large content blobs.
+**Permission:** `sites:read`.
+
+Read stored template/content metadata for an owned site before editing it. Preserve unrequested fields. Null content can mean a file-based deployment. Do not substitute a complete re-publication for a narrow content edit unless that is the supported publication primitive and the rest is preserved.
 
 ### `sites.list_releases`
 
-- **Permission:** `sites:read`.
-- **Input:** exact `site`.
-- **Use:** Identify retained releases, active version, release numbers, sizes, and rollback targets.
-- **Method:** Call directly for the exact site after each publication and before every rollback.
-- **Verify:** Select the exact returned release `id`; never derive or guess it from order or time.
-- **Report:** Give the human release number plus id when both exist and identify which release is active.
+**Permission:** `sites:read`.
 
-### `media.upload_image`
-
-- **Permission:** `media:write`.
-- **Input:** raw `contentBase64` for PNG, JPEG, GIF, or WebP; no data-URL prefix.
-- **Use:** Upload an image referenced by a structured site template.
-- **Method:** Upload before publication, then put the returned `media/<sha256>.<ext>` path in template content.
-- **Verify:** Check returned `path`, `mediaType`, and `sizeBytes`. Never echo the base64.
-- **Report:** Say the image is ready and give only its media path unless the site was also published.
+Read exact retained release IDs, active state and human numbers when present. Use after publication and before/after rollback. Select returned IDs, not an assumed first row or invented timestamp. A confirmed absent site is compatible with a new publish; permission or ownership failures are not permission to overwrite it.
 
 ### `sites.publish_files`
 
-- **Permission:** `sites:write`.
-- **Input:** `site`; non-empty `files[]`, each with `path` and exactly one of `text` or raw `contentBase64`.
-- **Use:** Publish an explicit static file tree.
-- **Method:** Require a regular `index.html` and preserve exact intended paths. Work from local files when the user wants a project or source changes; send one-off generated files directly when they exist only for this publication. Never create a throwaway local project just to stage generated content.
-- **Verify:** Call `sites.list_releases` for the exact site; require a new active release and use its id in supported gateway links. Use `domains.records` only when link state matters.
-- **Report:** Include domain, versioned gateway when supported, `tonsite://` link, release, and verified DNS-link status.
+**Permission:** `sites:write`.
+
+Input: exact site and nonempty files with `path` and exactly one of `text` or raw `contentBase64`. Provide an `index.html`, preserve intended paths/content, and keep secrets or unrelated local files out. This publishes static content. Read the active release afterward; verify DNS separately when the task requires a live site.
 
 ### `sites.publish_template`
 
-- **Permission:** `sites:write`.
-- **Input:** `site`, supported `template`, and validated `content`.
-- **Use:** Validate, render, and publish a supported structured template.
-- **Method:** Read existing content when editing, use the template schemas below, upload images first, and preserve unrelated fields.
-- **Verify:** Call `sites.list_releases` for the exact site; require the new active release. Read the exact template content only when the requested change requires it.
-- **Report:** Include domain, useful links, release, and verified DNS status. Never say `live` without read-back proof.
+**Permission:** `sites:write`.
+
+Input: exact site, supported template and content. Use the content guidance below because the generic MCP schema cannot describe every template variant. Upload image assets first and preserve existing content fields. After publishing, retain its hosting/Bag/link result and read back the active release. A renderer/editor update does not itself republish earlier user content.
+
+### `media.upload_image`
+
+**Permission:** `media:write`.
+
+Upload raw base64 of PNG/JPEG/GIF/WebP, currently up to 8 MiB, without a data-URL prefix. Reuse the returned `media/<hash>.<ext>` path in content; do not invent a hosted image URL or echo base64. A remote image URL is not a template media path.
 
 ### `sites.rollback`
 
-- **Permission:** `sites:rollback`.
-- **Input:** `site`, exact `releaseId`, and identical normalized `confirmSite`.
-- **Use:** Restore one retained release after explicit user intent.
-- **Method:** Call `sites.list_releases`, show or resolve the exact target release, then send the confirmation fields.
-- **Verify:** Re-read `sites.list_releases` for the exact site and require the selected release to be active.
-- **Report:** State the site, restored release number/id, and refreshed gateway or TON Site link.
+**Permission:** `sites:rollback`.
+
+Read releases, select the requested exact `releaseId`, and pass normalized matching `site`/`confirmSite`. Read back the active release. Rollback serves the historical artifact; it does not re-render old content or promise to undo separate DNS/Storage transactions.
 
 ### `sites.delete`
 
-- **Permission:** `sites:delete`.
-- **Input:** `site` and identical normalized `confirmSite`.
-- **Use:** Delete an owned deployment and served release files after explicit user intent.
-- **Method:** Use the exact user-supplied site, explain that DNS is separate, then send the confirmation fields. Use discovery only if the target is missing or ambiguous.
-- **Verify:** Re-read `sites.list_releases` for the exact site and require `not_found`. Use `domains.records` separately if DNS state matters.
-- **Report:** Say the deployment was deleted and explicitly state that TON DNS was unchanged.
+**Permission:** `sites:delete`.
+
+Read the exact site and intended effect, then use matching `site`/`confirmSite` once deletion is authorized. The backend refuses deletion while the site record still points here. Clearing DNS is a separate wallet-confirmed action; do not do it merely to suppress the guard. Verify the exact site is no longer present, and report deployment deletion separately from external DNS or paid-provider state.
 
 ### `deployments.list`
 
-- **Permission:** `deployments:read`.
-- **Input:** none.
-- **Use:** Inspect publication, rollback, deletion, and failure history across owned sites.
-- **Method:** Call for chronology or provenance and select the site/action relevant to the question.
-- **Verify:** Use an exact-site read for current state; history alone does not prove what is live.
-- **Report:** Give the latest relevant event, release, timestamp, and outcome without dumping the full history.
+**Permission:** `deployments:read`.
 
-## Template schemas
-
-Use only these fields with `sites.publish_template`. Unknown fields are discarded by the canonical validator. Template content is structured data, never raw HTML.
-
-Image fields use the `media/<hash>.<ext>` path returned by `media.upload_image`. Uploads accept PNG, JPEG, GIF, and WebP up to 8 MiB.
-
-### Template `links`
-
-Required: `name`, `links` as `[{"title":"...","url":"..."}]`.
-
-Optional: `bio`, `profileLayout` (`2` or `3`), `avatar`, `accent`, `telegram`, `recipient`, `profileActions`, `visibleSections`, `blocks`, `aboutBlocks`, `theme`.
-
-### Template `blog`
-
-Required: `title`, `date` in `YYYY-MM-DD`, and `blocks`.
-
-Optional: `theme`. Blocks support paragraph/header/quote (`p`, `h`, `quote` with `s` text runs), image (`img` with media `src`), YouTube (`yt`), and separator (`hr`).
-
-### Template `redirect`
-
-Required: HTTPS `destination`.
-
-### Template `token`
-
-Required: `name`, `ticker`, checksum-valid mainnet `address`, media `logo`, and `links`.
-
-Optional: `description`, media `banner`, `website`, `channel`, `group`, `theme`.
-
-### Template `sale`
-
-Required: `price`, `currency` (`GRAM` or `USD`), `description`, `telegram`, `textColor`, `backgroundColor`, `highlightColor`.
-
-Optional: media `image`, `cardColor` (defaults to `highlightColor`), `cardOpacity` as integer 0–100 (defaults to 10).
-
-### Template `tip`
-
-Required: `name`, `description`, checksum-valid mainnet `recipient`, and `assets`.
-
-Optional: `language` (default `en`), exactly three `amounts` (default `5`, `10`, `25`), media `avatar`, and `theme`. Languages: `en`, `ru`, `zh`, `de`, `it`, `es`, `hi`. Asset kinds: `gram`, `usdt`, or `jetton` with `master`, `name`, `symbol`, and `decimals`.
-
-### Shared template validation
-
-- Colors are six-digit hex values.
-- When `theme` is present, require `textColor`, `backgroundColor`, `surfaceColor`, and `accentColor`.
-- Safe link schemes are HTTP, HTTPS, Telegram, TON, and mailto.
-- Preserve unrelated existing fields when editing a template.
+List deployment history when the user asks for cross-site history or an audit. Events describe platform publication/rollback/deletion outcomes; they are not an on-chain transaction ledger. For one site's current artifact use its release reader instead.
 
 ### `sites.list_domains`
 
-- **Permission:** `sites:read`.
-- **Input:** A site name or stable site ID.
-- **Use:** Read domains attached to one owned site and their DNS status.
-- **Method:** Use this exact-site read before choosing an attachment to change. Site delegation still applies when using an ID.
-- **Verify:** Only domain-allowlisted names are returned; distinguish local attachment from current DNS linkage.
-- **Report:** Give the relevant domains and their returned status.
+**Permission:** `sites:read`.
+
+Read attachments by exact name or stable site ID. The response filters names by domain delegation and includes current link status; omission is not proof that no hidden aliases exist. Numeric IDs do not bypass site delegation. Preserve the stable ID for later checks if an alias will move.
 
 ### `sites.preflight_domain`
 
-- **Permission:** `sites:read`.
-- **Input:** Exact site and full domain name.
-- **Use:** Check ownership, linkage and conflicts before attaching a domain.
-- **Method:** Keep the returned conflict site ID for the following attach request. Both affected sites must be owned and within the site delegation.
-- **Verify:** This is read-only; it does not change DNS or attach a domain.
-- **Report:** Explain any existing source site and whether moving its last domain would delete it.
+**Permission:** `sites:read`.
+
+Read current domain ownership, linkage and source conflict for the exact target site/domain. Both affected sites must be owned and delegated. Retain the returned conflict ID and `willDeleteSite`; this check does not sign DNS or attach anything. Storage-source movement can require republishing instead of direct transfer of the local alias.
 
 ### `sites.attach_domain`
 
-- **Permission:** `sites:write`.
-- **Input:** Exact site/domain, matching confirmSite/confirmDomain, and the reviewed expectedConflictSiteId if present.
-- **Use:** Attach a domain whose DNS site record already points to the target site or its BagID.
-- **Method:** Run preflight first. Confirm the exact targets. If the source site will be deleted, additionally require confirmDeleteSourceSiteId and `sites:delete`; do not turn a conflict error into silent deletion.
-- **Verify:** Call sites.list_domains for the target and source after completion. Local attachment and DNS signing are separate operations.
-- **Report:** State which domain was attached and any explicitly confirmed source-site deletion.
+**Permission:** `sites:write`.
+
+Require the DNS site record to point to the target ADNL endpoint or exact target BagID first. Pass exact `confirmSite`/`confirmDomain` and the reviewed `expectedConflictSiteId` if any. Deleting a last-domain source additionally needs explicit `confirmDeleteSourceSiteId` and `sites:delete`. Permissions and mappings are checked again under locks.
+
+After success read target/source by their retained stable IDs. If the source was deliberately deleted, its missing state is expected. If an allowlisted source alias moved, loss of delegated access is a verification limit, not proof of deletion. Describe only the observed mapping and any explicitly confirmed deletion.
 
 ### `sites.unlink_domain`
 
-- **Permission:** `sites:write`.
-- **Input:** Exact site/domain and matching confirmSite/confirmDomain; confirmDeleteSite only for an explicitly approved last-domain deletion.
-- **Use:** Detach a domain after its DNS record no longer points at this site, or after it changed owner.
-- **Method:** Read the attachments first. Removing the last domain requires `sites:delete`; deleting a Storage-backed site also requires `storage:delete` and the matching bag delegation. Never infer approval for deletion from a detach request alone.
-- **Verify:** Read sites.list_domains afterward; not_found is expected if the last domain and site were deliberately removed.
-- **Report:** State the detached domain and whether the site was deleted. Do not claim the DNS record was changed by this tool.
+**Permission:** `sites:write`.
+
+Detach only after the exact DNS record no longer points to this site, or after the domain changed owner. Use exact `confirmSite`/`confirmDomain`. Last-domain removal requires authorized `confirmDeleteSite` and `sites:delete`; cleanup of its Storage Bag also requires `storage:delete` and Bag delegation. These permissions do not authorize withdrawing provider funds.
+
+Read the site by its stable ID afterward. A last-domain deletion can make it absent; losing a delegated alias can also remove read access. Use the mutation's `deletedSite` result plus available read-back, and state an unavailable read honestly.
+
+## Template content
+
+All six templates use the backend parser as final validation. Preserve current content when editing; omitted fields can restore defaults. `schemaVersion` is backend-owned. Images use uploaded media paths. Do not invent a wallet, Jetton master or token metadata. Fixed themes require all four six-digit hex colors: `textColor`, `backgroundColor`, `surfaceColor`, `accentColor`.
+
+### Template `links` (Profile)
+
+`name` and `links: [{title, url}]`; links can be empty when the Links section is not explicitly enabled. Optional `bio`, `avatar`, `accent`, `telegram`, `recipient`, `profileLayout` (2 or 3), `theme`, legacy `blocks`, and v3 `aboutBlocks`. New v3 rich About content belongs in `aboutBlocks`; preserve existing layout on narrow edits.
+
+`profileActions` contains `message` and/or `tip`; message needs `telegram`, tip needs `recipient`. An empty list hides actions without erasing their settings. `visibleSections` contains `links`, `ton_dns`, `telegram_usernames`; explicitly including `links` requires at least one link. `tipJar` supplies `assets`, optional `language` and three `amounts`, using the same settings as `tip`; it also requires a recipient. Include `tip` in the effective `profileActions` to display the Tip Jar. These controls render inside Profile, not as a separately published Tip page.
+
+### Template `blog`
+
+`title`, `date` (`YYYY-MM-DD`), `blocks`; optional `theme`. Rich blocks use `t`: `p`, `h`, `quote` with `s: [{text, b?, i?, u?, st?, href?}]`; `img` with media `src` and optional caption/width; `yt` with a YouTube `id`; or `hr`. Text alignment is optional `center`/`right`. Example paragraph: `{"t":"p","s":[{"text":"Hello"}]}`.
+
+### Template `redirect`
+
+`destination`: a canonical HTTPS URL. It is a redirect release, not a visible landing page. Do not add unrelated HTML or navigation.
+
+### Template `token`
+
+`name`, `ticker`, checksum-valid mainnet `address`, uploaded `logo`, `links`; optional `description`, media `banner`, `website`, `channel`, `group`, `theme`. Use supplied/verified token identity; publishing this page does not deploy or validate a token contract.
+
+### Template `sale`
+
+`price` (string), `currency` (`GRAM`/`USD`), `description`, `telegram`, `textColor`, `backgroundColor`, `highlightColor`. Optional media `image`, `buttonTextColor`, `webdom: true`, `marketAppUrl`, and legacy `cardColor`/`cardOpacity` (integer 0–100). Listing buttons are page content, not MCP market transactions; Webdom trading tools are not exposed. Preserve legacy fields on edits.
+
+### Template `tip`
+
+`name`, `description`, checksum-valid mainnet `recipient`, nonempty unique `assets` (up to eight). Asset variants: `{kind:"gram"}`, `{kind:"usdt"}`, or `{kind:"jetton",master,name,symbol,decimals}`. Canonical USDT must not also be added as a duplicate custom Jetton.
+
+Optional uploaded `avatar`, `theme`, `language` (`en`, `ru`, `zh`, `de`, `it`, `es`, `hi`; default `en`) and exactly three positive decimal-string `amounts` (default `5`, `10`, `25`). Amount precision must fit every selected asset. Publishing tip controls does not transfer funds.

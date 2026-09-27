@@ -1,123 +1,75 @@
 # TON Storage
 
-Use the runtime schema as canonical. Load `transactions.md` for every wallet-confirmed Storage mutation.
+## Free Bags versus paid storage
 
-## Contents
+`create_bag` and `pin_bag` create/import a platform reference and free seeding; they do not hire paid providers. A successful import can still be resolving or downloading. Report state from `bag_details.live` and `pinModes`, not from the verb used by the tool.
 
-- Paid-provider workflow
-- State and response rules
-- Tool methods
+Paid evidence is under `paidStorage`: contract balance/configuration, the complete provider set and each provider's storage/proof state. A configured provider may still be resolving/downloading. Prefer this contract-centric object to legacy `paid`, which is a compatibility projection of one provider.
 
-## Paid-provider workflow
+## Adding paid providers
 
-1. Read `storage.bag_details` and select exact compatible keys from `storage.providers`.
-2. Freeze providers and shared contract balance with `storage.provider_funding_session`.
-3. Calculate exact integer funding with `storage.provider_funding_preview`.
-4. Show amount, coverage, providers, and warnings; continue only after user acceptance.
-5. Create `storage.provider_quote` with the exact accepted inputs.
-6. Load `transactions.md` and request `storage.send_provider_tx` using the live quote.
-7. After confirmation, re-read `storage.bag_details`; use `storage.provider_operation` only with a separately obtained provider-operation UUID.
+Use Bag details → provider selection → funding session → exact preview → quote → [wallet confirmation](transactions.md). Retain the same Bag, keys, proof span and coverage choice throughout. A selected provider set can share balance with existing or external providers. Use backend integer nanoTON amounts, liabilities, first rewards and coverage; catalog daily prices are advisory.
 
-## State and response rules
-
-Keep platform Bag state, DNS state, provider contract/payment state, and active provider storage separate. Never recompute backend nanoTON/coverage values with floating point. Sessions last five minutes and quotes two minutes; restart the flow when stale.
-
-For a Bag result, include name when present, full BagID, file count/size, and verified seed/provider state. For a quote, include exact amount, coverage, providers, warnings, and expiry. State that paid-provider storage is separate after create/import.
-
-```text
-TON Storage Bag ready
-
-BagID: <bagId>
-Status: <verified seed or provider state>
-Files: <count>, <size>
-```
+Honor the user's authorized provider, cost and duration choices. Ask only for a missing choice or a material changed amount/effect. Do not choose new spending settings merely to get a successful quote. `targetCoverageSeconds: null` means minimum activation funding, not an unspecified desired duration. Session/quote expiries are returned; the current lifetimes are five and two minutes. Refresh stale read/quote state, but never repeat a wallet action whose outcome is uncertain.
 
 ### `storage.list_bags`
 
-- **Permission:** `storage:read`.
-- **Input:** none.
-- **Use:** List Bags owned or imported by the authenticated wallet.
-- **Method:** Call only for Bag discovery or selection. Do not enumerate every Bag when an exact BagID is supplied or returned by a mutation.
-- **Verify:** Use `storage.bag_details` for current detail. Presence in the list does not prove a paid provider actively stores the Bag.
-- **Report:** Give Bag name/id and relevant platform/provider state; summarize long lists.
+**Permission:** `storage:read`.
+
+Discover owned/imported Bags when requested. Use an exact supplied or newly returned BagID directly with `bag_details`. Inventory membership is not proof of paid storage. Report full BagIDs when needed for reuse.
 
 ### `storage.bag_details`
 
-- **Permission:** `storage:read`.
-- **Input:** exact `bagId`.
-- **Use:** Read metadata and current platform/provider state for one owned Bag.
-- **Method:** Call before linking DNS, choosing providers, funding, or deleting.
-- **Verify:** Keep seed/reference state, contract/payment state, provider configuration, and active storage separate.
-- **Report:** Give full BagID, name when present, size/files, and only the provider/storage state actually returned.
+**Permission:** `storage:read`.
+
+Input: exact `bagId`. Read name/size, free/paid pin modes, live file/seed state when available, and `paidStorage` contract/provider state. `live: null` means local daemon evidence is unavailable, not that the Bag is empty. Use this before funding, DNS linking or deletion and for the corresponding read-back.
 
 ### `storage.providers`
 
-- **Permission:** `storage:read`.
-- **Input:** `bagId`; optional sort `recommended`, `cheapest`, `uptime`, or `capacity`.
-- **Use:** Discover backend-filtered providers compatible with one owned Bag.
-- **Method:** Select exact 64-character provider public keys from the returned candidates.
-- **Verify:** Treat catalog price, uptime, country, capacity, and version as advisory. A funding session and quote own transaction truth.
-- **Report:** Compare only useful provider facts and label catalog values as estimates, not final charges.
+**Permission:** `storage:read`.
+
+Input: `bagId`, optional runtime-supported sort. Select exact provider public keys from backend-filtered candidates. Treat country, uptime, version, capacity and catalog price as advisory; do not substitute them for a live offer or disqualify an unknown software version by yourself.
 
 ### `storage.provider_funding_session`
 
-- **Permission:** `storage:read`.
-- **Input:** exact `bagId` and one or more exact `providerPubkeys[]`.
-- **Use:** Freeze a short-lived provider and shared-contract-balance snapshot.
-- **Method:** Create after provider selection. Retain the returned proof-span range, automatic value, coverage bounds, warnings, and expiry. Recreate if selection changes.
-- **Verify:** Require the session to match the Bag and selected keys. Never reuse it for another Bag or after its five-minute expiry.
-- **Report:** Say the snapshot is ready and include compact provider selection, expiry, and useful coverage bounds.
+**Permission:** `storage:read`.
+
+Input: exact Bag and selected `providerPubkeys`. Retain the signed `sessionId`, provider snapshot, automatic proof span, valid ranges, balance warnings and expiry. Selection changes require a fresh session; a session from another Bag is never reusable.
 
 ### `storage.provider_funding_preview`
 
-- **Permission:** `storage:read`.
-- **Input:** matching `bagId`, `sessionId`, `targetCoverageSeconds`, and `proofSpanSeconds`.
-- **Use:** Calculate exact integer funding, liabilities, and resulting coverage from a live session.
-- **Method:** Use a target inside the returned coverage bounds and normally the automatic proof span or a value inside its range.
-- **Verify:** Use backend nanoTON amounts and coverage exactly. Do not calculate with floating point or a catalog daily-rate shortcut.
-- **Report:** Show exact total, resulting coverage, providers, and warnings such as other providers sharing the balance.
+**Permission:** `storage:read`.
+
+Input: matching Bag/session, `proofSpanSeconds` and `targetCoverageSeconds` (a positive duration or explicit null for minimum). Stay within the returned bounds, normally using the automatic proof span. Present backend funding and resulting coverage, including existing-provider liabilities and initial rewards; do not approximate `balance / daily rate` or invent a client amount.
 
 ### `storage.provider_quote`
 
-- **Permission:** `storage:read`.
-- **Input:** exact accepted `bagId`, `sessionId`, `targetCoverageSeconds`, and `proofSpanSeconds`.
-- **Use:** Create the signed short-lived quote required for a paid-provider pin.
-- **Method:** Call only after the user accepts the preview; repeat the exact accepted inputs and retain the returned `quoteId`.
-- **Verify:** Require all returned quote inputs to match and use the quote before its two-minute expiry. Recreate stale session/preview/quote state.
-- **Report:** Give final backend amount, coverage, providers, expiry, and that wallet confirmation is the next step.
+**Permission:** `storage:read`.
+
+Create a quote with the exact accepted session, Bag, duration/minimum choice and proof span. Retain the returned `quoteId` and expiry. If a revalidation changes cost, coverage or affected providers beyond the authorized choice, resolve that change before continuing. The quote itself neither pays nor activates storage.
 
 ### `storage.provider_operation`
 
-- **Permission:** `storage:read`.
-- **Input:** exact UUID `providerOperationId` obtained separately from the MCP confirmation request.
-- **Use:** Reconcile one paid-provider operation after a confirmation request.
-- **Method:** Never pass the transaction request's `operationId`. Poll only when the user asks to wait or status is genuinely pending.
-- **Verify:** Distinguish `prepared`, `submitted`, `confirmed`, `failed`, and `expired`; only `confirmed` proves the provider transaction completed.
-- **Report:** Give operation action, Bag, status, transaction reference/error when returned, and one next step.
+**Permission:** `storage:read`.
+
+Input: separately obtained provider-operation UUID as `providerOperationId`. Never pass the transaction request's `operationId`. Read/reconcile the named operation when available. `confirmed` proves this operation's contract effect, not necessarily active storage; also check Bag provider/proof state. If no provider ID is exposed, use Bag details and state that per-operation tracking is unavailable.
 
 ### `storage.create_bag`
 
-- **Permission:** `storage:write`.
-- **Input:** optional `name`; non-empty `files[]`, each with `name` or `path` and exactly one of `text` or raw `contentBase64`.
-- **Use:** Create and seed a new Bag from explicit files.
-- **Method:** Preserve intended paths and content encoding; do not invent additional files.
-- **Verify:** Read `storage.bag_details` for the returned BagID and require the expected file metadata.
-- **Report:** Say created/seeded, give full BagID and size/file count, and state that paid-provider storage is separate.
+**Permission:** `storage:write`.
+
+Create from the intended files: each needs a `name` or `path` and exactly one of `text` or raw `contentBase64`; `name` for the Bag is optional. Preserve file paths and bytes. Verify the returned BagID, expected files/size and current seed state using `bag_details`. Do not claim full download/seeding completion when it is still pending.
 
 ### `storage.pin_bag`
 
-- **Permission:** `storage:write`.
-- **Input:** exact public `bagId` and optional display `name`.
-- **Use:** Import and locally pin an existing public Bag.
-- **Method:** Use the exact BagID; do not describe this action as hiring a paid provider.
-- **Verify:** Read `storage.bag_details` for the exact imported BagID.
-- **Report:** Say imported/pinned by the platform, give full BagID, and keep paid-provider state separate.
+**Permission:** `storage:write`.
+
+Import the exact public BagID with an optional display name. Verify that Bag's platform reference and resolving/downloading/seeding state. This is free platform pinning, not a paid-provider contract.
 
 ### `storage.delete_bag`
 
-- **Permission:** `storage:delete`.
-- **Input:** `bagId` and identical `confirmBagId`.
-- **Use:** Delete an owned Bag reference and removable platform-seeded bytes after explicit user intent.
-- **Method:** Read details, resolve paid-provider stop/withdraw implications first, explain unchanged external state, then send matching ids.
-- **Verify:** Re-read `storage.bag_details` for the exact BagID and require `not_found`. Do not infer that provider contracts or DNS records were removed.
-- **Report:** State which platform data was deleted and explicitly identify unchanged provider-contract and DNS state.
+**Permission:** `storage:delete`.
+
+Read the Bag and delete its platform reference with identical `bagId`/`confirmBagId` after the user has authorized that deletion. Do not automatically stop providers, withdraw funds or clear DNS: those are separate effects requiring their own scope.
+
+Read back the exact Bag. `not_found` can confirm removal when nothing owned remains; if the user's paid contract still exists, Bag details may remain while `pinModes` no longer contains `free`. Report local reference removal separately from paid contracts, other references and DNS. If only the contract is active, say the paid contract remains; do not call provider storage active without its storage/proof evidence. Backend cleanup retains shared bytes when they are still needed.

@@ -1,134 +1,89 @@
-# Wallet-confirmed transactions
+# Wallet-confirmed operations
 
-Every tool in this file requires `transactions:request` and returns an HTTPS confirmation page valid for at most five minutes. Use the runtime schema as canonical. A successful tool call proves preparation only; the named read-back proves the product or indexed result.
+## Shared lifecycle
 
-## Contents
+All tools here require `transactions:request`. Their successful result contains `status: requires_user_confirmation`, `confirmationUrl`, `expectedSender`, `expiresAt`, `action` and a summary. Give the exact HTTPS link and meaningful summary to the user. The page restores the site's official TON Connect session; the user reviews and signs there. Do not substitute a custom QR code, `ton://` signing link or an agent-held key.
 
-- Required sequence and response
-- Tool methods
+An MCP request ID is not an on-chain transaction or provider-operation ID. There is no `transactions.get`/`transactions.list` MCP tool. Once the user confirms, verify the product state below. If a response is lost, a link expires after the wallet opened, or the user is unsure whether they signed, read the resulting state before preparing anything again. If exact evidence is unavailable, report uncertainty and obtain explicit retry intent rather than silently risking a duplicate payment.
 
-## Required sequence and response
-
-Read the fresh state named by the tool, resolve all user-controlled choices, then prepare the request. Require `status: requires_user_confirmation`, an HTTPS `confirmationUrl`, `expiresAt`, and the backend summary/amount when returned. Give the exact link and wait for the user before read-back.
-
-The page uses the site's official TON Connect connection. If the browser already has the expected wallet restored, no second connection is needed; otherwise the user must connect or switch to that wallet. Never replace this flow with custom-data signing, a custom QR code, or a `ton://` signing link.
-
-Before confirmation, return a short `Transaction ready` message with action, target, backend amount when present, labeled exact confirmation link, and expiry. After confirmation, replace it with the verified product state and its useful link or identifier. Never reuse the MCP request `operationId` as a product operation id.
-
-```text
-Transaction ready
-
-Action: <plain-language action>
-Target: <domain, site, Bag, collection, or item>
-Amount: <backend amount, when returned>
-Confirm: [Review and confirm](<exact confirmationUrl>)
-Expires: <expiresAt>
-```
+For DNS read-back, use [domains.md](domains.md): owned root records and owned child-item records are different readers. For site linkage, compare the exact category AND value type: ADNL and Storage hashes are not interchangeable.
 
 ### `sites.send_link_tx`
 
-- **Permission:** `transactions:request`.
-- **Input:** exact published `site`.
-- **Use:** Link an already published site to its owned TON DNS target.
-- **Method:** Always inspect the exact link state with `domains.records` immediately before preparing the request. If publication was not just verified, confirm the exact site with `sites.list_releases` too. Never enumerate all sites for a named target.
-- **Verify:** After user confirmation, call `domains.records` for the exact target and require the expected record plus `linkedHere: true`.
-- **Report:** Before confirmation show site, backend amount when returned, expiry, and exact link. After read-back include the verified gateway/TON Site link. If ownership prevents linking, say the deployment remains published but only the wallet that currently owns the target can prepare the DNS transaction.
+**Permission:** `transactions:request`.
+
+Prepare the platform ADNL `site` record for an exact owned name. Verify the named deployment with `sites.list_releases` or a just-completed publication. Choose this tool only for ADNL hosting; if publication returned `hosting: storage` and a `bagId`, use `storage.send_bag_link_tx` instead. After confirmation, read the exact root or child record and require the intended ADNL linkage. The tool alone does not attach a new local alias; see site-domain management in [sites.md](sites.md).
 
 ### `dns.send_record_tx`
 
-- **Permission:** `transactions:request`.
-- **Input:** `domain`, exact `kind`, optional `valueKind`, optional `value`, and `rawCategory`/`keyName` only for custom records.
-- **Use:** Set or clear a wallet, site, storage, resolver, text, ADNL, or custom DNS record.
-- **Method:** Read `domains.records`; use `value: null` to clear; omit fields unrelated to the chosen kind; prepare the request.
-- **Verify:** After confirmation, call `domains.records` and compare the exact category and value, including cleared state.
-- **Report:** Before confirmation show action, domain, backend amount, expiry, and link. Afterward state the exact verified record.
+**Permission:** `transactions:request`.
+
+Input: exact owned `domain`, `kind`, intended `value` and, when relevant, `valueKind`, `rawCategory` or `keyName`. Use `value: null` to clear. Preserve the existing value type, especially Storage under the `site` category. A new named text record needs its key name; existing custom records use their exact category. Read the root record or owned child item before editing and compare the same category/type/value afterward. Do not infer success from unrelated DNS changes.
 
 ### `dns.send_name_tx`
 
-- **Permission:** `transactions:request`.
-- **Input:** `domain` and `action`: `mint`, `bid`, or `release`.
-- **Use:** Mint an available `.ton` name, bid in its auction, or release an eligible expired name.
-- **Method:** Call `dns.lookup`; use `mint` only for `available`, `bid` only for `auction`, and `release` only for a releasable `expired` name. Surface the backend amount before confirmation.
-- **Verify:** After confirmation, call `dns.lookup` and report the new lifecycle state. Never infer ownership from request creation.
-- **Report:** Show action, name, backend amount, expiry, and link; afterward report only the lifecycle/ownership state the lookup proves.
+**Permission:** `transactions:request`.
+
+For a root `.ton`, select `mint` only after `dns.lookup` says available, `bid` for an active auction, or `release` for an eligible expired name. The backend chooses the current amount; a release/mint request is not evidence that the name is now yours. Re-read `dns.lookup` and report the observed owner/auction/lifecycle after confirmation.
 
 ### `dns.send_renew_tx`
 
-- **Permission:** `transactions:request`.
-- **Input:** `domains[]` containing one to four unique owned names.
-- **Use:** Renew up to four owned `.ton` names in one wallet confirmation.
-- **Method:** When names are supplied, reject duplicates, preserve them exactly, and let the transaction preflight validate them. Use `domains.list` only when the user asks the agent to select renewable names.
-- **Verify:** After confirmation, call `dns.lookup` for each exact requested name and compare expiry. Use `domains.list` only for an explicitly requested wallet-wide renewal view.
-- **Report:** Before confirmation list names, backend amount, expiry, and link. Afterward report only names whose renewed expiry is visible.
+**Permission:** `transactions:request`.
 
-### `subdomains.create_collection_tx`
-
-- **Permission:** `transactions:request`.
-- **Input:** exact `parentAddress`, `mode` (`locked` or `linked`), 11-entry `priceGrid` of nanoTON digit strings, and `minChars` from 1 to 4.
-- **Use:** Create a Subdomain collection for an owned parent.
-- **Method:** Resolve the exact parent; have the user supply or explicitly approve pricing and minimum length; never invent pricing.
-- **Verify:** After confirmation, find the collection with `subdomains.list_collections`, then read it with `subdomains.get_collection` or `subdomains.control`.
-- **Report:** Before confirmation show parent, mode, pricing summary, backend amount, expiry, and link. Afterward give verified collection address and state.
-
-### `subdomains.mint_tx`
-
-- **Permission:** `transactions:request`.
-- **Input:** exact `collectionAddress`, `parent`, requested `label`, and optional `setWalletToMinter`.
-- **Use:** Mint or complete a pending mint for one label in a collection.
-- **Method:** Read `subdomains.get_collection`; preserve exact parent/collection; enable wallet-to-minter only when explicitly desired; surface whether summary says `mint` or `confirm_mint`.
-- **Verify:** After confirmation, use `subdomains.list_items` and `subdomains.get_item` to require the new owned item.
-- **Report:** Before confirmation show full name, action, backend amount, expiry, and link. Afterward show verified item address and owner state.
-
-### `subdomains.collection_action_tx`
-
-- **Permission:** `transactions:request`.
-- **Input:** `collectionAddress`, exact `action`, and only its required action-specific fields.
-- **Use:** Request `withdraw_fees`, `set_access`, `set_allowlist`, `set_label_reserved`, `transfer_admin`, `link_resolver`, `unlink_resolver`, `enforce_resolver`, `fill_parent`, `claim`, `claim_revenue`, `convert_locked`, or `retry_parent_return`.
-- **Method:** Read `subdomains.control` and `subdomains.get_collection`; provide `accessMode` for `set_access`, `wallet` plus `allowed` for `set_allowlist`, `label` plus `reserved` for `set_label_reserved`, or `newAdmin` for `transfer_admin`; omit unrelated fields.
-- **Verify:** After confirmation, re-read collection and control state and require the intended effect.
-- **Report:** Before confirmation name exact action, collection, effect, backend amount, expiry, and link. Afterward report only verified state.
-
-### `subdomains.transfer_item_tx`
-
-- **Permission:** `transactions:request`.
-- **Input:** exact `itemAddress` and exact `newOwner`.
-- **Use:** Transfer an owned Subdomain NFT item.
-- **Method:** Read `subdomains.get_item`, show full name and destination for confirmation, then prepare the request.
-- **Verify:** After confirmation, re-read `subdomains.list_items`; disappearance from the current wallet is expected once indexed. Use an available item read when recipient ownership must be proven.
-- **Report:** Before confirmation show full name, shortened destination, backend amount, expiry, and link. Afterward say it left the current wallet only when read-back proves it.
-
-### `subdomains.recovery_tx`
-
-- **Permission:** `transactions:request`.
-- **Input:** exact `parentAddress`, `mode` (`locked` or `linked`), and `action`.
-- **Use:** Retry collection deployment or repair resolver state for an owned parent.
-- **Method:** Use `retry_deployment`; use `link_resolver` only for `linked`; use `enforce_resolver` only for `locked`. Resolve the current parent/mode first.
-- **Verify:** After confirmation, locate the collection and read `subdomains.get_collection` plus `subdomains.control`.
-- **Report:** Before confirmation show parent, mode, recovery action, backend amount, expiry, and link. Afterward state verified deployment/resolver state.
-
-### `storage.send_bag_link_tx`
-
-- **Permission:** `transactions:request`.
-- **Input:** exact owned `bagId` and owned `domain`.
-- **Use:** Link a Bag as the TON Storage site record of an owned domain.
-- **Method:** Read `storage.bag_details` and `domains.records`, resolve exact Bag/domain, then prepare the request.
-- **Verify:** After confirmation, call `domains.records` and require the expected Storage-backed site record.
-- **Report:** Before confirmation show BagID, domain, backend amount, expiry, and link. Afterward give verified TON Site link and record state.
-
-### `storage.send_provider_tx`
-
-- **Permission:** `transactions:request`.
-- **Input:** `action`, `bagId`, and action-specific `quoteId`, `targetCoverageSeconds`, `providerPubkey`, or `acknowledgeOtherProviders`.
-- **Use:** Request paid-provider `pin`, `top_up`, `stop`, or `withdraw` after live backend revalidation.
-- **Method:** For `pin`, use the exact current `quoteId`; for `top_up`, provide accepted target coverage; for one-provider `stop`, provide its exact key; use `withdraw` only when eligible; set `acknowledgeOtherProviders` only after the user reviews that warning.
-- **Verify:** After confirmation, read `storage.bag_details`. Call `storage.provider_operation` only when a distinct provider-operation UUID is available; never use the MCP request `operationId`.
-- **Report:** Before confirmation show action, full BagID, backend amount, affected providers, expiry, and link. Never say paid storage is active until read-back proves it.
+Input: one to four unique owned `.ton` names in `domains`. Preserve explicitly supplied targets. For a larger user-requested renewal, use batches within the tool limit and give each wallet confirmation separately; do not silently add names or assume all batches succeeded. Verify each renewed expiry through `dns.lookup`.
 
 ### `dns.send_transfer_tx`
 
-- **Permission:** `transactions:request`.
-- **Input:** Exact root `.ton` or `.t.me` domain and the recipient wallet address as newOwner.
-- **Use:** Transfer ownership of a domain NFT through a user-confirmed wallet transaction.
-- **Method:** Confirm the recipient with the user, then request the backend-validated transaction. Return its HTTPS confirmation URL verbatim. Subdomain NFTs use subdomains.transfer_item_tx instead.
-- **Verify:** A confirmation link or submitted BOC is not proof of ownership transfer. Recheck `.ton` ownership using dns.lookup. For `.t.me`, disappearance from domains.list_usernames is insufficient to prove the recipient; recipient ownership must be verified independently before reporting confirmation.
-- **Report:** Show the full domain, recipient, backend amount, expiry and confirmation link. Report execution only when ownership evidence establishes it.
+**Permission:** `transactions:request`.
+
+Input: a root `.ton` or `.t.me` name and the recipient's exact wallet address `newOwner`. Resolve any ambiguous recipient before preparation; this input is not a DNS alias. Show the full name and recipient in the review. The backend revalidates ownership and fixes the NFT destination, transfer payload, refund address and amount.
+
+After confirmation, `dns.lookup` can verify the intended recipient for `.ton`. The MCP has no public `.t.me` recipient-ownership read: an owned-list disappearance or `domains.records` denial is insufficient. State this boundary and use independent recipient evidence only when available within the user's request. Never retry solely because the former owner can no longer read the name.
+
+### `subdomains.create_collection_tx`
+
+**Permission:** `transactions:request`.
+
+Input: known `parentAddress`, chosen `mode`, eleven nanoTON integer strings in `priceGrid` and `minChars`. Have the user choose or authorize commercial settings; do not invent prices or convert the grid through floating point. Linked and Locked have different parent-control consequences; resolve that choice before preparation. The backend derives the collection and checks parent ownership. Read the resulting administered collection/control state after confirmation; paginate discovery only if its address is not available. Do not claim a collection is connected solely because it was deployed.
+
+### `subdomains.mint_tx`
+
+**Permission:** `transactions:request`.
+
+Input: supplied `collectionAddress`, full `parent`, exact `label`, optional `setWalletToMinter`. A public minter need not own or administer the collection. Do not require `subdomains.get_collection`, which can legitimately deny that user; `mint_tx` performs the fresh availability, pricing and access check itself. If the collection address or parent is missing, ask for it instead of pretending an owned collection list is a public catalog.
+
+The runtime defaults `setWalletToMinter` to true. Set it explicitly to false when the requested result must not install that wallet record, or clarify when the choice is material. Preserve the summary's distinction between `mint` and `confirm_mint`. After confirmation, discover the exact item in `subdomains.list_items` and verify it with `subdomains.get_item`; report only the actual owned item.
+
+### `subdomains.collection_action_tx`
+
+**Permission:** `transactions:request`.
+
+Read `subdomains.control`; use `get_collection` when the caller has its required rights and collection detail is needed. The schema currently exposes `withdraw_fees`, `set_access`, `set_allowlist`, `set_label_reserved`, `transfer_admin`, `link_resolver`, `unlink_resolver`, `enforce_resolver`, `fill_parent`, `claim`, `claim_revenue`, `convert_locked` and `retry_parent_return`.
+
+Pass only the chosen action's fields: access mode; wallet plus allowed flag; label plus reserved flag; or new admin. Resolve destructive or ownership-changing effects with the user if not already authorized. After confirmation, check the specific control/collection field or balance affected. If an admin/parent transfer removes read rights, report that limitation rather than treating denial as proof of the new owner's identity.
+
+### `subdomains.transfer_item_tx`
+
+**Permission:** `transactions:request`.
+
+Read the owned `itemAddress`, then prepare its transfer to exact `newOwner`. Show full name and recipient. Both item readers are owner-scoped: disappearance after signing does not establish the recipient. Use available independent evidence for a confirmed recipient claim, otherwise report submitted/ownership no longer visible. Never resend from a `not_found` read-back.
+
+### `subdomains.recovery_tx`
+
+**Permission:** `transactions:request`.
+
+Input: known `parentAddress`, original `mode` and action. Use `retry_deployment` for deployment recovery, `link_resolver` only for Linked, or `enforce_resolver` only for Locked. If the collection is not deployed, its absence is not a reason to demand an impossible collection pre-read; the backend re-derives it and checks rights. If known, inspect control state to choose the recovery. Verify deployment and resolver connection separately afterward.
+
+### `storage.send_bag_link_tx`
+
+**Permission:** `transactions:request`.
+
+Read the exact owned `bagId` and target root/child records, then prepare the Storage-backed `site` record. After confirmation require the `site` category with Storage value type and that exact BagID; the ADNL-only `linkedHere` flag is not sufficient. A newly attached alias also needs the local attachment operation in [sites.md](sites.md).
+
+### `storage.send_provider_tx`
+
+**Permission:** `transactions:request`.
+
+For `pin`, first complete the selected-provider session/preview/quote flow in [storage.md](storage.md), then pass the matching `bagId` and fresh `quoteId`. For `top_up`, use the user's requested target remaining coverage in `targetCoverageSeconds` (30 days = 2592000 seconds), not that many additional days. No new provider session is needed. A `funding_unchanged` response means the target is already funded; do not increase it merely to create a transaction. For `stop`, select one exact managed provider key. Omitting it works only when exactly one managed provider is configured; there is no stop-all action. Only managed providers can be stopped through this tool; external providers are not removable here. If the user requests several stops, handle the selected managed keys separately with their own confirmations and read-backs. Use `withdraw` only for the requested eligible balance withdrawal. Set `acknowledgeOtherProviders` only when the user has accepted the shared-balance effect.
+
+Read back `storage.bag_details` and its contract/provider states. Only use `storage.provider_operation` if a distinct provider-operation UUID was actually supplied; the MCP confirmation's `operationId` is not one. Configuration/payment and active storage with proof are separate results. Respect the user's spending/coverage constraints if the fresh quote or prepared amount changes.

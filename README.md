@@ -12,7 +12,9 @@ One cross-client Agent Skill plus the remote Resistance Tools MCP for TON Sites,
 
 The plugin contains one `resistance-tools-skill` skill, invoked as `$resistance-tools-skill`. Its `SKILL.md` defines the shared workflow and loads only the relevant bundled reference for `sites`, `domains`, `storage`, `wallet`, or `transactions`.
 
-Together, those references contain the permission, inputs, method, verification, and required user response for every MCP tool. The live MCP schema remains canonical.
+Those references cover all 51 MCP tools, their permission boundaries and the read-back each workflow can actually perform. The live MCP schema remains canonical. Setup commands stay in this README rather than being duplicated in the skill.
+
+The skill distinguishes root DNS records from child NFT records, public minting from collection administration, ADNL from Storage-backed publication, and platform Bag deletion from paid-provider state. Expired or uncertain wallet requests are never automatically replayed.
 
 ## Plugin packages
 
@@ -93,6 +95,8 @@ claude mcp login resistance-tools-mcp
 ```
 
 ### Update 0.2.3 or later
+
+Refresh the Git marketplace and reinstall the plugin cache to pick up the current skill, including documentation updates that retain the remote server version. Start a new chat afterward so the client discovers the refreshed skill. Updating documentation does not require reconnecting an otherwise valid OAuth session.
 
 Codex:
 

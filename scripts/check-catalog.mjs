@@ -190,9 +190,9 @@ for (const name of referenceNames) {
     const heading = headings[index];
     const section = doc.slice(heading.index, headings[index + 1]?.index ?? doc.length);
     documentedMethods.push(heading[1]);
-    for (const marker of ["**Permission:**", "**Input:**", "**Use:**", "**Method:**", "**Verify:**", "**Report:**"]) {
-      assert.ok(section.includes(marker), `${name}.md ${heading[1]} missing ${marker}`);
-    }
+    const documentedScope = section.match(/\*\*Permission:\*\* `([^`]+)`/u)?.[1];
+    const contract = expectedToolContracts.find((tool) => tool.name === heading[1]);
+    assert.equal(documentedScope, contract?.scope, `${heading[1]} permission differs from its runtime contract`);
   }
 }
 assert.equal(documentedMethods.length, 51, "references must document exactly 51 tools");
@@ -245,26 +245,6 @@ assert.match(readme, /`invalid_target` alone does not/i);
 assert.doesNotMatch(readme, /repair `invalid_target`/i);
 assert.match(readme, /tools only; they do not install the bundled skills/i);
 assert.match(readme, /`main` is the stable branch used for installation and releases\. Development happens on `dev`\./);
-assert.match(skill, /codex mcp add resistance-tools-mcp --url https:\/\/app\.resistance\.dog\/api\/mcp/);
-assert.match(skill, /claude mcp add --transport http resistance-tools-mcp https:\/\/app\.resistance\.dog\/api\/mcp/);
-assert.match(skill, /claude plugin marketplace add TONresistor\/resistance-tools-mcp@main/);
-assert.match(skill, /codex plugin marketplace upgrade resistance-tools/);
-assert.match(skill, /claude plugin marketplace update resistance-tools/);
-assert.match(skill, /claude plugin update resistance-tools-mcp@resistance-tools/);
-assert.match(skill, /`invalid_target` alone does not/i);
-assert.doesNotMatch(skill, /including `invalid_target`, proves/i);
-assert.match(skill, /codex mcp logout resistance-tools/);
-assert.match(skill, /codex mcp remove resistance-tools/);
-assert.match(skill, /codex mcp logout resistance-tools-mcp/);
-assert.match(skill, /codex mcp remove resistance-tools-mcp/);
-assert.match(skill, /codex plugin remove resistance-tools-mcp@resistance-tools/);
-assert.match(skill, /codex plugin marketplace remove resistance-tools/);
-assert.match(skill, /claude mcp logout resistance-tools/);
-assert.match(skill, /claude mcp remove resistance-tools/);
-assert.match(skill, /claude mcp logout resistance-tools-mcp/);
-assert.match(skill, /claude mcp remove resistance-tools-mcp/);
-assert.match(skill, /claude plugin uninstall resistance-tools-mcp@resistance-tools/);
-assert.match(skill, /claude plugin marketplace remove resistance-tools/);
 assert.match(releaseWorkflow, /test "\$GITHUB_REF" = "refs\/heads\/main"/);
 assert.doesNotMatch(releaseWorkflow, /refs\/heads\/dev/);
 
@@ -283,19 +263,10 @@ for (const retired of [
 }
 assert.doesNotMatch(publicGuidance, /--scopes|--oauth-resource|auth\.(device|wallet)_/i);
 
-for (const marker of ["Domain:", "Gateway:", "TON Site:", "Release:"]) {
-  assert.ok(references.get("sites").includes(marker), `site result contract missing ${marker}`);
-}
 for (const state of ["prepared", "awaiting confirmation", "submitted", "confirmed", "published", "live"]) {
   assert.ok(publicGuidance.includes(state), `guidance missing state ${state}`);
 }
-assert.match(skill, /operationId.*MCP confirmation request/i);
-assert.match(skill, /Do not enumerate the user's wallet, sites, domains, Bags, collections, or items/i);
-assert.match(skill, /Never create a throwaway project as an intermediate step/i);
 assert.doesNotMatch(references.get("sites"), /Read `sites\.list` before a mutation/i);
 assert.doesNotMatch(references.get("wallet"), /Use `wallet\.me` before owner-sensitive work/i);
-assert.match(references.get("storage"), /Never pass the transaction request's `operationId`/i);
-assert.match(skill, /Do not add boilerplate explaining that the agent cannot sign/i);
-assert.match(skill, /Let the user select permissions/i);
 
 console.log("1 Agent Skill, 5 focused references, 51 live tools, and cross-client plugin metadata are aligned");
